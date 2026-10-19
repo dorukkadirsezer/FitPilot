@@ -77,6 +77,11 @@ fun GymFlowApp() {
                 },
                 onNavigateToAiSettings = {
                     navController.navigate("ai_settings")
+                },
+                onNavigateToActiveWorkout = { routeParams ->
+                    navController.navigate("active_workout/AI_COACH?$routeParams") {
+                        popUpTo("dashboard") { inclusive = false }
+                    }
                 }
             )
         }

@@ -17,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.doruk.fitprogress.core.ui.components.AiActionButton
+import com.doruk.fitprogress.core.ui.components.PrimaryActionButton
 import com.doruk.fitprogress.theme.ElectricCyan
 import com.doruk.fitprogress.theme.VividViolet
 import java.text.SimpleDateFormat
@@ -133,6 +134,19 @@ fun WorkoutDetailScreen(
                     val isAiEnabled by viewModel.isAiEnabled.collectAsState()
                     val aiSummary by viewModel.aiSummary.collectAsState()
                     val isGenerating by viewModel.isGeneratingSummary.collectAsState()
+                    val exportStatus by viewModel.exportStatus.collectAsState()
+                    val snackbarHostState = androidx.compose.runtime.remember { SnackbarHostState() }
+
+                    androidx.compose.runtime.LaunchedEffect(exportStatus) {
+                        if (exportStatus != null) {
+                            snackbarHostState.showSnackbar(exportStatus!!)
+                            viewModel.clearExportStatus()
+                        }
+                    }
+
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        SnackbarHost(hostState = snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter))
+                    }
 
                     if (isAiEnabled) {
                         Card(
@@ -159,9 +173,31 @@ fun WorkoutDetailScreen(
                                         enabled = !isGenerating
                                     )
                                 }
+
+                                Spacer(modifier = Modifier.height(12.dp))
+                                PrimaryActionButton(
+                                    onClick = { viewModel.exportToCoach() },
+                                    text = "Export to Coach",
+                                    modifier = Modifier.fillMaxWidth()
+                                )
                             }
                         }
                         Spacer(modifier = Modifier.height(16.dp))
+                    } else {
+                        // AI Disabled but we still want to show the export button
+                        Card(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                PrimaryActionButton(
+                                    onClick = { viewModel.exportToCoach() },
+                                    text = "Export to Coach",
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                        }
                     }
                 }
 

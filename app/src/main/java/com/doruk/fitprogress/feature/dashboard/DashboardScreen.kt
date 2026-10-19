@@ -41,10 +41,30 @@ fun DashboardScreen(
     onNavigateToWorkoutHistory: () -> Unit,
     onNavigateToBodyMetrics: () -> Unit,
     onNavigateToAiSettings: () -> Unit,
+    onNavigateToActiveWorkout: (String) -> Unit,
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
+    val snackbarHostState = androidx.compose.runtime.remember { SnackbarHostState() }
+
+    androidx.compose.runtime.LaunchedEffect(uiState.importError) {
+        if (uiState.importError != null) {
+            snackbarHostState.showSnackbar(uiState.importError!!)
+            viewModel.clearImportError()
+        }
+    }
+
+    androidx.compose.runtime.LaunchedEffect(uiState.importedSessionId) {
+        if (uiState.importedSessionId != null) {
+            val templates = uiState.templates
+            val templateId = templates.find { it.dayCode == "AI_COACH" }?.id ?: "AI_COACH"
+            // Start ActiveWorkout without going through coaching (which creates session).
+            // We just created it, so navigate there with recId to bypass session creation.
+            onNavigateToActiveWorkout("recId=${uiState.importedSessionId}")
+            viewModel.clearImportedSessionId()
+        }
+    }
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -69,6 +89,19 @@ fun DashboardScreen(
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
+        },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { viewModel.importCoachPlan() },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ) {
+                Icon(
+                    imageVector = androidx.compose.material.icons.Icons.Default.Settings, // Fallback icon, could use something better
+                    contentDescription = "Import Coach Plan"
+                )
+            }
         }
     ) { padding ->
         if (uiState.isLoading) {
