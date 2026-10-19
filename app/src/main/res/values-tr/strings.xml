@@ -1,0 +1,303 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FitPilot Beta</string>
+    
+    <string name="ready_to_crush_it">Antrenmana Hazır Mısın?</string>
+    <string name="welcome_back">TEKRAR HOŞ GELDİN</string>
+    <string name="select_workout">Bir Antrenman Seç</string>
+    <string name="recent_workouts">Son Antrenmanlar</string>
+    <string name="analytics">Analizler</string>
+    <string name="body">Vücut</string>
+    <string name="nutrition_tracking">Beslenme Takibi</string>
+    <string name="view_trends">Trendleri Gör</string>
+    <string name="no_data">Veri yok</string>
+    <string name="completed">tamamlandı</string>
+    <string name="start">Başla</string>
+
+    <string name="smart_settings">Akıllı Ayarlar</string>
+    <string name="app_theme">Uygulama Teması</string>
+    <string name="light">Açık</string>
+    <string name="dark">Koyu</string>
+    <string name="system_default">Sistem</string>
+    <string name="language">Dil</string>
+    <string name="english">İngilizce</string>
+    <string name="turkish">Türkçe</string>
+
+    <string name="ai_disclaimer">Yapay zeka çıktıları tahminidir ve manuel olarak incelenmelidir. Bu uygulama tıbbi, beslenme veya profesyonel sağlık tavsiyesi sağlamaz.</string>
+    <string name="enable_smart_features">Akıllı Özellikleri Etkinleştir</string>
+    <string name="unlock_smart_features">Akıllı yemek tarama ve antrenman içgörülerini kilidini açın.</string>
+
+    <string name="gemini_api_key">Gemini API Anahtarı (Yerel Geliştirici)</string>
+    <string name="api_key_stored_locally">Yerel olarak EncryptedSharedPreferences içinde saklanır.</string>
+    <string name="api_key">API Anahtarı</string>
+    <string name="show_key">Anahtarı Göster</string>
+    <string name="hide_key">Anahtarı Gizle</string>
+    <string name="clear">Temizle</string>
+    <string name="save_key">Anahtarı Kaydet</string>
+
+    <string name="save_ai_logs">Yapay Zeka Günlüklerini Kaydet</string>
+    <string name="locally_stores_prompt_summaries">İstem özetlerini yerel olarak saklar.</string>
+    <string name="timer_sound">Zamanlayıcı Sesi</string>
+    <string name="sound_soft_beep">Yumuşak Bip</string>
+    <string name="sound_clear_tone">Net Ton</string>
+    <string name="test_warning">Test (Uyarı)</string>
+    <string name="test_finish">Test (Bitiş)</string>
+
+    <string name="workout_preview">Antrenman Önizlemesi</string>
+    <string name="focus_label">Odak:</string>
+    <string name="warm_up">Isınma</string>
+    <string name="duration_label">Süre:</string>
+    <string name="min">dk</string>
+    <string name="exercises">Egzersizler</string>
+    <string name="superset">SÜPER SET</string>
+    <string name="bodyweight">Vücut Ağırlığı</string>
+    <string name="rest_label">Dinlenme:</string>
+    <string name="s">sn</string>
+    <string name="note_label">Not:</string>
+    <string name="requires_straps">Strap kullanımı gerekli</string>
+    <string name="start_workout">Antrenmanı Başlat</string>
+    <string name="sets_x">set x</string>
+    <string name="reps_pipe">tekrar |</string>
+    <string name="at_rpe">@ RPE</string>
+    <string name="workout_history">Antrenman Geçmişi</string>
+    <string name="workout_detail">Antrenman Detayı</string>
+    
+    <string name="weekly_snapshot">Haftalık Özet</string>
+    <string name="smart_coaching">Akıllı Koçluk</string>
+    <string name="readiness_check_in">Hazırlık Kontrolü</string>
+    <string name="smart_recommendation">Akıllı Tavsiye</string>
+    <string name="analysis_complete">ANALİZ TAMAMLANDI</string>
+    <string name="start_recommended_plan">Tavsiye Edilen Planı Başlat</string>
+    <string name="start_original_plan_anyway">Orijinal Planı Yine de Başlat</string>
+    <string name="select_time_limited_instead">Bunun Yerine Zaman Kısıtlı Seç</string>
+    <string name="take_a_rest_walk_day">Dinlenme/Yürüyüş Günü Yap</string>
+    <string name="take_rest_walk_day">Dinlenme/Yürüyüş Günü Yap</string>
+    <string name="log_rest_walk_day">Dinlenme / Yürüyüş Gününü Kaydet</string>
+
+    <string name="timer_settings">Zamanlayıcı Ayarları</string>
+    <string name="enable_master_sound">Titreşimi Etkinleştir</string>
+    <string name="warning_tone_30s">30 Saniye Uyarı Tonu</string>
+    <string name="timer_finished_tone">Zamanlayıcı Bitiş Tonu</string>
+    <string name="done">Tamam</string>
+    
+    <string name="no_completed_workouts_yet">Henüz tamamlanmış antrenman yok.</string>
+    <string name="mode_label">Mod:</string>
+    <string name="day">Gün</string>
+    <string name="sets_completed">set tamamlandı</string>
+
+    <string name="body_fat">Vücut Yağı</string>
+    <string name="history">Geçmiş</string>
+    <string name="no_body_metrics_logged_yet">Henüz kaydedilmiş vücut ölçüsü yok.</string>
+    
+    <string name="workout_consistency">Antrenman Tutarlılığı</string>
+    <string name="workouts">Antrenman</string>
+    <string name="skipped_sets">Atlanan Setler</string>
+
+    <string name="a_days">A Günleri</string>
+    <string name="b_days">B Günleri</string>
+    <string name="c_days">C Günleri</string>
+    <string name="d_days">D Günleri</string>
+
+    <string name="cardio_activity">Kardiyo Aktivitesi</string>
+    <string name="sessions">Seans</string>
+    <string name="total_minutes">Toplam Dakika</string>
+
+    <string name="nutrition_averages">Beslenme Ortalamaları</string>
+    <string name="avg_cals">Ort. Kalori</string>
+    <string name="avg_protein">Ort. Protein</string>
+    <string name="days_logged">Kaydedilen Günler</string>
+
+    <string name="protein_hit">Protein Hedefi</string>
+    <string name="cals_hit">Kalori Hedefi</string>
+    <string name="nutrition">Beslenme</string>
+    
+    <string name="copy_yesterday">Dünü Kopyala</string>
+    <string name="copy_yesterdays_meals">Dünün Öğünlerini Kopyala</string>
+    <string name="copy_yesterday_confirmation">Bugün zaten kaydedilmiş öğünleriniz var. Dünün öğünlerini bugünkü günlüğe eklemek istediğinizden emin misiniz?</string>
+    <string name="copy">Kopyala</string>
+
+    <string name="previous">Önceki</string>
+    <string name="next">Sonraki</string>
+    <string name="daily_macros">Günlük Makrolar</string>
+
+    <string name="ai_food_logger">Yapay Zeka Yemek Kaydedici</string>
+    <string name="what_did_you_eat">Ne yedin?</string>
+    <string name="ai_food_logger_disclaimer">Yapay zeka tahminleri kolaylık sağlamak içindir ve kaydetmeden önce incelemenizi gerektirir.</string>
+    <string name="parse">Ayrıştır</string>
+    <string name="cancel">İptal</string>
+    <string name="over">fazla</string>
+    <string name="left">kaldı</string>
+    <string name="saved">Kaydedilenler</string>
+    <string name="no_foods_logged">Kaydedilmiş yiyecek yok</string>
+    <string name="thirty_sec_warning_tone">30 Saniye Uyarı Tonu</string>
+    <string name="test_sound">Sesi Test Et</string>
+
+    <string name="general_warm_ups">Genel Isınma</string>
+    <string name="coach">Koç</string>
+    <string name="set">Set</string>
+    <string name="weight_label">Ağırlık</string>
+    <string name="reps_label">Tekrar</string>
+    <string name="finish">Bitir</string>
+    <string name="rest_time">Dinlenme Süresi</string>
+    <string name="skip">Geç</string>
+    <string name="working_sets">Çalışma Setleri</string>
+    <string name="warm_ups">Isınma</string>
+    <string name="reps">tekrar</string>
+    <string name="target">hedef</string>
+    <string name="advice">Tavsiye</string>
+    <string name="not_available">Mevcut Değil</string>
+
+    <string name="enum_pre_workout">Antrenman Öncesi</string>
+    <string name="enum_post_workout">Antrenman Sonrası</string>
+    <string name="enum_start_original">Orijinal plan</string>
+    <string name="enum_start_recommended">Akıllı tavsiye uygulandı</string>
+    <string name="enum_start_time_limited">Zaman kısıtlı uygulandı</string>
+    <string name="enum_rest_day">Dinlenme günü yapıldı</string>
+    <string name="enum_controlled">Kontrollü</string>
+    <string name="enum_light">Hafif</string>
+    <string name="enum_rest_or_walk">Dinlenme/Yürüyüş</string>
+    <string name="enum_normal">Normal</string>
+    <string name="enum_overridden">Tavsiye yoksayıldı</string>
+
+    <string name="reason_severe_fatigue">Düşük enerji, kötü uyku ve zorlu bir önceki antrenmandan kaynaklanan şiddetli yorgunluk tespit edildi. Dinlenme veya hafif yürüyüş önerilir.</string>
+    <string name="reason_soreness_motivation">Düşük motivasyonla birlikte yüksek kas ağrısı. Bir toparlanma günü yapın.</string>
+    <string name="reason_knee_fatigue_lower">Alt vücut gününde yorgunlukla birlikte yüksek diz hassasiyeti. Eklemleri korumak için dinlenme veya yürüyüş önerilir.</string>
+    <string name="reason_back_fatigue_lower">RDL ağırlıklı bir alt vücut gününde yorgunlukla birlikte yüksek sırt rahatsızlığı. Alt sırtı korumak için dinlenme veya yürüyüş önerilir.</string>
+    <string name="reason_joint_drop_10">Eklem hassasiyeti tespit edildi. Yük %10 azaltılıyor.</string>
+    <string name="reason_fatigue_drop_10">Düşük enerji veya yüksek kas ağrısı. Daha hafif bir seans için yük %10 azaltılıyor.</string>
+    <string name="reason_controlled_fatigue">Orta derecede yorgunluk veya eklem hassasiyeti. Planlanan ağırlıkları koruyun, ancak bugün ilerleme kaydetmek yerine kesinlikle forma odaklanın.</string>
+    <string name="reason_normal_good_energy">İyi enerji ve toparlanma. Planlanan antrenmana devam edin.</string>
+
+    <string name="reminder_straps">Strap kullanımı gerekli</string>
+    <string name="reminder_shoulder_contraction">Omuz pozisyonu ve sırt kasılması hatırlatıcısı: Kürek kemiklerini sıkıştırmaya odaklanın.</string>
+    <string name="reminder_controlled_squat">Kontrollü iniş, dizleri agresif bir şekilde kilitlemeyin.</string>
+    <string name="reminder_rdl_hinge">Kalçayı geriye itin, belinizle kaldırmayın.</string>
+    <string name="reminder_hack_squat">Ayaklar hafif önde, kontrollü form, quad odaklı.</string>
+    <string name="warmup_set_number">Isınma Seti %1$d</string>
+    <string name="working_set_number">Çalışma Seti %1$d</string>
+
+    <string name="cardio_summary_format">%1$s · Hedef: %2$s · Tamamlanan: %3$s</string>
+    <string name="reminder_controlled_mode">KONTROLLÜ MOD: Kesinlikle forma odaklanın. Bugün ilerleme zorlamaktan kaçının.</string>
+    <string name="meal_breakfast">Kahvaltı</string>
+    <string name="meal_lunch">Öğle Yemeği</string>
+    <string name="meal_dinner">Akşam Yemeği</string>
+    <string name="meal_snack">Atıştırmalık</string>
+    <string name="meal_pre_workout">Antrenman Öncesi</string>
+    <string name="meal_post_workout">Antrenman Sonrası</string>
+    <string name="coach_label">Koç</string>
+    <string name="active_workout_finish">Bitir</string>
+    <string name="active_workout_general_warmups">Genel Isınma</string>
+    <string name="active_workout_weight">Ağırlık</string>
+    <string name="active_workout_reps">Tekrar</string>
+    <string name="active_workout_rest_time">Dinlenme Süresi</string>
+    <string name="active_workout_skip">Geç</string>
+    <string name="active_workout_straps_required">Strap Kullanımı Gerekli</string>
+    <string name="workout_history_cardio_target">Hedef</string>
+    <string name="workout_history_cardio_completed">Tamamlanan</string>
+    <string name="workout_detail_working_sets">Çalışma Setleri</string>
+    <string name="workout_detail_reps">tekrar</string>
+    <string name="workout_detail_skipped">Atlandı</string>
+    <string name="workout_detail_na">Mevcut Değil</string>
+    <string name="body_metrics_title">Vücut Ölçüleri</string>
+    <string name="body_metrics_latest">En Son Ölçümler</string>
+    <string name="body_metrics_progress">İlerlemen</string>
+    <string name="body_metrics_weight">Ağırlık</string>
+    <string name="body_metrics_waist">Bel</string>
+    <string name="body_metrics_body_fat">Vücut Yağı</string>
+    <string name="body_metrics_history">Geçmiş</string>
+    <string name="body_metrics_no_data">Veri Yok</string>
+    <string name="body_metrics_no_data_desc">Henüz kaydedilmiş vücut ölçüsü yok.</string>
+    <string name="add_food_log_food">Yemek Kaydet</string>
+    <string name="add_food_choose_saved">Kaydedilmiş Yiyeceklerden Seç</string>
+    <string name="add_food_food_name">Yiyecek Adı</string>
+    <string name="add_food_serving_size">Porsiyon Boyutu</string>
+    <string name="add_food_unit">Birim</string>
+    <string name="add_food_calories">Kalori</string>
+    <string name="add_food_protein">Protein</string>
+    <string name="add_food_carbs">Karbonhidrat</string>
+    <string name="add_food_fat">Yağ</string>
+    <string name="add_food_save_future">Gelecekte kullanmak üzere kaydet</string>
+    <string name="dialog_cardio_timer">Kardiyo Zamanlayıcısı</string>
+    <string name="dialog_pause">Duraklat</string>
+    <string name="dialog_finish">Bitir</string>
+    <string name="section_warmup_sets">Isınma Setleri</string>
+    <string name="section_working_sets">Çalışma Setleri</string>
+    <string name="label_warmup_short">Isınma %1$s</string>
+    <string name="label_set_short">Set %1$s</string>
+    <string name="workout_detail_rest_format">  Dinlenme: %1$ds (hedef %2$ds)</string>
+    <string name="workout_detail_advice_format">  Tavsiye: %1$s</string>
+    <string name="cardio_session_title">Kardiyo Seansı</string>
+    <string name="cardio_type_format">Tür: %1$s</string>
+    <string name="cardio_duration_format">Süre: %1$s dk</string>
+    <string name="generating_summary">Oluşturuluyor...</string>
+    <string name="generate_summary">Özet Oluştur</string>
+    <string name="custom_workout">Özel Program</string>
+    
+    <string name="post_workout_cardio">Antrenman Sonrası Kardiyo</string>
+    <string name="start_cardio">Kardiyoya Başla</string>
+    <string name="skip_cardio">Kardiyoyu Geç</string>
+    <string name="cardio_label">Kardiyo:</string>
+    
+    <!-- Program descriptions and coaching mapped from database -->
+    <string name="desc_tpl_a">Güç ve temel itme-çekme temeli.</string>
+    <string name="desc_tpl_b">Güç ve Merkez Bölgesi</string>
+    <string name="desc_tpl_c">Hacim ve Detay</string>
+    <string name="desc_tpl_d">Makine Odaklı Hacim</string>
+    
+    <string name="warmup_light_walking">5 dakika hafif yürüyüş</string>
+    <string name="warmup_elliptical_light">5 dakika hafif eliptik</string>
+    <string name="warmup_bike_light">5 dakika hafif bisiklet</string>
+    <string name="warmup_shoulder_chest_mobility">Dinamik omuz ve göğüs mobilitesi</string>
+    <string name="warmup_hip_ankle_mobility">Dinamik kalça ve ayak bileği mobilitesi</string>
+    <string name="warmup_upper_body_dynamic">Genel üst vücut dinamik ısınması</string>
+    <string name="warmup_lower_body_dynamic">Genel alt vücut dinamik ısınması</string>
+    
+    <string name="coach_lock_shoulder_blades">Kürek kemiklerini sıkıştır.</string>
+    <string name="coach_straps_required">Strap kullanımı gerekli.</string>
+    <string name="coach_controlled_descent">Kontrollü iniş.</string>
+    <string name="coach_push_hips_back">Kalçayı geriye it, belinle kaldırma.</string>
+    <string name="coach_focus_chest_contraction">Tepe noktasında göğüs kasılmasına odaklan.</string>
+    <string name="coach_constant_tension">Omuzlarda sürekli gerilim.</string>
+    <string name="coach_full_stretch">Tam esneme ve kasılma.</string>
+    <string name="sound_style">Ses Stili</string>
+    <string name="log_food">Yemek Kaydet</string>
+    <string name="choose_from_saved_foods">Kayıtlı Yemeklerden Seç</string>
+    <string name="food_name">Yemek Adı</string>
+    <string name="serving_size">Porsiyon</string>
+    <string name="unit">Birim</string>
+    <string name="calories">Kalori</string>
+    <string name="protein">Protein</string>
+    <string name="carbs">Karbonhidrat</string>
+    <string name="fat">Yağ</string>
+    <string name="save_for_future_use">Sonraki kullanımlar için kaydet</string>
+    <string name="get_smart_recommendation">Akıllı Öneri Al</string>
+    <string name="how_are_you_feeling">NASIL HİSSEDİYORSUN?</string>
+    <string name="duration">Süre</string>
+    <string name="volume">Hacim</string>
+    <string name="avg_rpe">Ort. RPE</string>
+    <string name="completed_status">Tamamlandı</string>
+    <string name="skipped_none">Atlandı/Yok</string>
+    <string name="skipped">atlandı</string>
+    <string name="notes_added">Not eklendi</string>
+    <string name="workout_details">Antrenman Detayları</string>
+    <string name="back">Geri</string>
+    <string name="date_label">Tarih:</string>
+    <string name="total_volume">Toplam Hacim</string>
+    <string name="workout_note">Antrenman Notu</string>
+    <string name="ai_workout_summary">Yapay Zeka Antrenman Özeti</string>
+    <string name="ai_summary_disclaimer">Yapay zeka özetleri antrenman verilerinize dayalı tahminlerdir.</string>
+    <string name="completed_label">Tamamlandı</string>
+    <string name="skipped_label">Atlandı</string>
+    <string name="last_7_days">SON 7 GÜN</string>
+    <string name="ai_weekly_review">Yapay Zeka Haftalık Değerlendirme</string>
+    <string name="ai_review_disclaimer">Yapay zeka değerlendirmeleri kayıtlı verilerinize dayalı tahminlerdir.</string>
+    <string name="generate_review">Değerlendirme Oluştur</string>
+    <string name="body_metrics">Vücut Ölçümleri</string>
+    <string name="latest_metrics">Son Ölçümler</string>
+    <string name="your_progress">Gelişimin</string>
+    <string name="body_trends">Vücut Trendleri</string>
+    <string name="weight">Ağırlık</string>
+    <string name="change_7d">7g Değişim</string>
+    <string name="waist">Bel</string>
+
+</resources>

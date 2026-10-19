@@ -1,0 +1,354 @@
+
+    <!DOCTYPE html>
+    <html lang="tr">
+    <head>
+        <meta charset="utf-8">
+        <title>FitPilot Beta</title>
+        <style>
+            @page {
+                size: A4;
+                margin: 2cm;
+                @bottom-right {
+                    content: counter(page);
+                }
+            }
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                color: #333;
+                line-height: 1.6;
+                margin: 20px;
+            }
+            h1, h2, h3 {
+                color: #2c3e50;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 20px;
+            }
+            th, td {
+                border: 1px solid #ddd;
+                padding: 8px;
+            }
+            th {
+                background-color: #f2f2f2;
+                text-align: left;
+            }
+            code {
+                background-color: #f8f9fa;
+                padding: 2px 4px;
+                border-radius: 4px;
+                font-family: 'Courier New', Courier, monospace;
+            }
+            pre {
+                background-color: #f8f9fa;
+                padding: 10px;
+                border-radius: 4px;
+                overflow-x: auto;
+            }
+            hr {
+                border: 0;
+                height: 1px;
+                background-color: #eee;
+                margin: 30px 0;
+            }
+        </style>
+    </head>
+    <body>
+        <hr />
+<p>title: "FitPilot Beta"
+subtitle: "Proje Durumu &amp; Geliştirme Raporu"
+author: "Antigravity AI"
+date: "Ekim 2026"</p>
+<hr />
+<h1>1. Kapak Sayfası (Cover Page)</h1>
+<p><strong>Proje Adı:</strong> FitPilot Beta (Önceki Adı: GymFlow AI)
+<strong>Rapor Türü:</strong> Proje Durumu &amp; Geliştirme Raporu
+<strong>Mevcut Sürüm:</strong> <code>0.1.0-beta</code>
+<strong>Mevcut Geliştirme Aşaması:</strong> <code>Phase 11A.14</code> <em>(Planlanan ve üzerinde çalışılan aşama)</em>
+<strong>Tarih:</strong> Ekim 2026
+<strong>Teknoloji:</strong> Android / Kotlin / Jetpack Compose</p>
+<hr />
+<h1>2. Yönetici Özeti (Executive Summary)</h1>
+<p><strong>FitPilot Beta</strong>, kullanıcıların fitness yolculuklarını optimize etmeyi amaçlayan, akıllı bir egzersiz koçluğu ve takip uygulamasıdır. Temel felsefesi, karmaşık ve zaman alıcı veri girişlerini basitleştirerek kullanıcının antrenman ve beslenme süreçlerine odaklanmasını sağlamaktır. </p>
+<p><strong>Mevcut Olgunluk Seviyesi:</strong> Uygulama şu anda <em>beta</em> aşamasındadır. Çekirdek antrenman takip sistemi, kronometre mekaniği, beslenme takibi (temel düzeyde) ve Akıllı Koçluk (Smart Coaching) özellikleri uygulanmış olup geliştirme süreci devam etmektedir. Yapay Zeka (AI / Gemini), uygulamanın temel kimliği değil, destekleyici bir katmandır. Phase 11B öncesi, veritabanı karakter kodlaması (mojibake) sorunları ve Smart Recommendation ekranındaki çökmeler (<code>REST_OR_WALK</code> senaryosu) gibi kritik iyileştirmelere (Phase 11A.14) odaklanılmaktadır.</p>
+<hr />
+<h1>3. Ürün Vizyonu (Product Vision)</h1>
+<p>FitPilot Beta'nın hedefi, akıllı ve kişiselleştirilmiş bir fitness asistanı olmaktır. </p>
+<p><strong>Mevcut İşlevsellik (Implemented):</strong>
+- Antrenman takibi ve ilerleme (Progression).
+- Dinlenme zamanlayıcısı (Rest Timer).
+- Basit beslenme (Nutrition) takibi.
+- Deterministik Akıllı Koçluk (Readiness Check-in).
+- Egzersiz ve set bazlı not sistemi.</p>
+<p><strong>Gelecek Yol Haritası (Future Roadmap):</strong>
+- Detaylı ve esnek program oluşturucu (Program Builder).
+- Kapsamlı egzersiz kütüphanesi.
+- Gelişmiş motivasyon ve analitik özellikleri.</p>
+<hr />
+<h1>4. Mevcut Teknoloji Yığını (Current Technology Stack)</h1>
+<ul>
+<li><strong>Kotlin:</strong> Uygulamanın modern ve güvenli bir şekilde geliştirilmesi için birincil dil.</li>
+<li><strong>Jetpack Compose:</strong> Deklaratif UI (Material 3) bileşenleri ile esnek ve hızlı kullanıcı arayüzü tasarımı.</li>
+<li><strong>Room:</strong> Çevrimdışı (offline-first) yerel veritabanı persistansı için. Mevcut yapı stabil çalışmaktadır.</li>
+<li><strong>DataStore:</strong> Kullanıcı tercihleri ve ayarları (örn. Tema, Kronometre Sesi) asenkron olarak saklamak için.</li>
+<li><strong>Hilt (Dagger):</strong> Bağımlılık enjeksiyonu (Dependency Injection) için.</li>
+<li><strong>MVVM &amp; Clean Architecture:</strong> Domain (UseCase), Data (Repository/DAO) ve UI (ViewModel) ayrımını sağlamak için.</li>
+<li><strong>Gemini AI Entegrasyonu:</strong> Beslenme analizi (Food Parsing) ve isteğe bağlı akıllı özellikler için destekleyici servis katmanı.</li>
+</ul>
+<hr />
+<h1>5. Mimari Genel Bakış (Architecture Overview)</h1>
+<p>Uygulama, klasik bir "Clean Architecture" ve MVVM prensiplerine göre tasarlanmıştır:</p>
+<p><code>text
+[ UI / Jetpack Compose ]  -&gt; Kullanıcı arayüzü ve state render
+          ↓
+[ ViewModels ]            -&gt; UI State yönetimi ve UseCase tetiklemeleri
+          ↓
+[ UseCases (Domain) ]     -&gt; İş mantığı (Progression, Smart Coaching vb.)
+          ↓
+[ Repositories ]          -&gt; Veri orkestrasyonu (Data, Domain'e soyutlanır)
+          ↓
+[ Room DAO / DataStore ]  -&gt; Yerel veritabanı ve ayarlar (Offline-first)</code></p>
+<p><strong>Not:</strong> Deterministik "Smart Coaching", <code>CalculateSmartRecommendationUseCase</code> içerisinde yönetilir. Gemini-AI ise sadece <code>GeminiAiService</code> aracılığıyla, özellik aktif edildiğinde devreye girmektedir.</p>
+<hr />
+<h1>6. Mevcut Uygulama Ekranları (Current Application Screens)</h1>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Ekran Adı</th>
+<th style="text-align: left;">Durum</th>
+<th style="text-align: left;">Açıklama</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Dashboard</strong></td>
+<td style="text-align: left;">Uygulanmış (Implemented)</td>
+<td style="text-align: left;">Ana merkez; güncel antrenmanlar ve beslenme özetleri.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Smart Settings</strong></td>
+<td style="text-align: left;">Uygulanmış (Implemented)</td>
+<td style="text-align: left;">Dil, tema ve Gemini ayarları.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Readiness Check-in</strong></td>
+<td style="text-align: left;">Uygulanmış (Implemented)</td>
+<td style="text-align: left;">Antrenman öncesi fiziksel durum anketi.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Smart Recommendation</strong></td>
+<td style="text-align: left;">Uygulanmış (Implemented)</td>
+<td style="text-align: left;">Anket sonucuna göre NORMAL, CONTROLLED, LIGHT, REST_OR_WALK kararı.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Workout Preview</strong></td>
+<td style="text-align: left;">Uygulanmış (Implemented)</td>
+<td style="text-align: left;">Antrenman başlamadan önce set, ağırlık ve geçmiş notların önizlemesi.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Active Workout</strong></td>
+<td style="text-align: left;">Uygulanmış (Implemented)</td>
+<td style="text-align: left;">Çekirdek antrenman takip ekranı. Isınma, çalışma setleri, süpersetler.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Workout History</strong></td>
+<td style="text-align: left;">Uygulanmış (Implemented)</td>
+<td style="text-align: left;">Tamamlanan antrenmanların geçmiş listesi.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Workout Detail</strong></td>
+<td style="text-align: left;">Uygulanmış (Implemented)</td>
+<td style="text-align: left;">Geçmiş antrenmana ait süre, hacim, RPE ve notların detayı.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Exercise History</strong></td>
+<td style="text-align: left;">Uygulanmış (Implemented)</td>
+<td style="text-align: left;">Spesifik bir egzersizin geçmiş performans verileri.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Nutrition Dashboard</strong></td>
+<td style="text-align: left;">Uygulanmış (Implemented)</td>
+<td style="text-align: left;">Günlük kalori ve makro besin özeti.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Add Food / Saved Foods</strong></td>
+<td style="text-align: left;">Uygulanmış (Implemented)</td>
+<td style="text-align: left;">Manuel besin ekleme ve kaydedilmiş besinleri listeleme.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Body Metrics</strong></td>
+<td style="text-align: left;">Kısmen Uygulanmış</td>
+<td style="text-align: left;">Kilo ve yağ oranı takibi için arayüz.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Advanced Analytics</strong></td>
+<td style="text-align: left;">İleriye Ertelendi (Deferred)</td>
+<td style="text-align: left;">Gelişmiş haftalık/aylık grafikler (Şimdilik Analytics Dashboard mevcut).</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1>7. Çekirdek Antrenman Sistemi (Core Workout System)</h1>
+<ul>
+<li><strong>Tohumlanmış (Seeded) Programlar:</strong> A (Upper Body 1), B (Lower Body 1), C (Upper Body 2), D (Lower Body 2).</li>
+<li><strong>Isınma &amp; Çalışma Setleri:</strong> Isınma setleri ve çalışma setleri açıkça ayırt edilmiştir.</li>
+<li><strong>Etkileşimler:</strong> Kullanıcılar ağırlık, tekrar ve RPE girebilir; seti tamamlayabilir (Complete) veya atlayabilir (Skip).</li>
+<li><strong>Kardiyo:</strong> Antrenman sonu (Post-Workout) kardiyo takibi mevcuttur.</li>
+</ul>
+<hr />
+<h1>8. Dinlenme Zamanlayıcısı (Rest Timer System)</h1>
+<ul>
+<li><strong>Mekanik:</strong> Set tamamlandığında geri sayım başlar. <code>+30 sn</code>, <code>-15 sn</code> ve <code>Skip</code> özellikleri çalışmaktadır.</li>
+<li><strong>Uyarılar:</strong> 30 saniye kala ve süre bitiminde sesli uyarı verilir. Ses stilleri (TimerSoundStyle) DataStore üzerinden seçilebilir.</li>
+<li><strong>Test Edilebilirlik:</strong> Sesli uyarılar emülatörde çalışmaktadır. Fiziksel cihazda titreşim özelliği koddadır (Vibrator) ancak emülatör sınırlamaları nedeniyle <em>sadece</em> kod seviyesinde doğrulanmıştır.</li>
+</ul>
+<hr />
+<h1>9. Notlar Sistemi (Notes System)</h1>
+<ul>
+<li><strong>Hiyerarşi:</strong> Antrenman bazlı, Egzersiz bazlı ve Set bazlı notlar.</li>
+<li><strong>Kullanım:</strong> Kullanıcılar <code>Active Workout</code> sırasında veya önizleme ekranlarında not girebilir. Notlar çevrilmez veya lokalize edilmez; girildiği şekliyle saklanır.</li>
+<li><strong>Kalıcılık (Persistence):</strong> Room <code>SetLogEntity</code> ve <code>WorkoutSessionEntity</code> içerisinde tutulur.</li>
+</ul>
+<hr />
+<h1>10. Antrenman Geçmişi ve Analitik (History &amp; Analytics)</h1>
+<ul>
+<li><strong>Mevcut Durum:</strong> <code>Workout History</code> ekranında güncel süre, hacim, set sayısı özeti sunulmaktadır. İlgili karta tıklanarak <code>Workout Detail</code> ekranına geçilebilir.</li>
+<li><strong>Gelecek Analitik (Analytics Hub):</strong> Haftalık, aylık trendler ve kas dağılımı gibi gelişmiş özellikler yol haritasındadır (Phase 11B ve sonrası).</li>
+</ul>
+<hr />
+<h1>11. Beslenme Sistemi (Nutrition System)</h1>
+<ul>
+<li><strong>Manuel Kayıt:</strong> Öğün tipi, kalori, protein, karbonhidrat, yağ ve porsiyon boyutu kaydedilebilir.</li>
+<li><strong>Yapay Zeka Destekli Analiz:</strong> <code>AiFoodReviewScreen</code> üzerinden Gemini destekli serbest metin besin ekleme özelliği entegredir. (Çalışması için Gemini API Key gereklidir).</li>
+</ul>
+<hr />
+<h1>12. Vücut Metrikleri (Body Metrics)</h1>
+<p>Desteklenen temel metrikler "Kilo" ve "Yağ Oranı" (Body Fat). Kullanıcılar manuel veri girişi yapabilir, ancak grafiksel raporlama şimdilik temel düzeydedir.</p>
+<hr />
+<h1>13. Akıllı Koçluk Sistemi (Smart Coaching System)</h1>
+<p>Bu sistem tamamen <strong>deterministiktir</strong> ve AI içermez.
+- <strong>NORMAL:</strong> Hedeflenen antrenman.
+- <strong>CONTROLLED:</strong> Set sayısı ve RPE hafif düşürülür.
+- <strong>LIGHT:</strong> Çok daha düşük hacim ve efor (Aktif toparlanma).
+- <strong>REST_OR_WALK:</strong> Antrenmanı pas geçip sadece yürüyüş veya dinlenme kaydetme. (Not: Bu özellikteki UI çökme sorunu Phase 11A.14'te giderilmiştir).</p>
+<hr />
+<h1>14. Gemini / Yapay Zeka Özellikleri (AI Features)</h1>
+<ul>
+<li><strong>Kullanım:</strong> Sadece beslenme metinlerini (Food Parsing) çözümlemek ve opsiyonel antrenman özetleri sunmak için kullanılır.</li>
+<li><strong>Bağımsızlık:</strong> Gemini kapalı olsa dahi uygulama %100 yerel işlevselliğiyle (offline-first) çalışmaya devam eder. API Anahtarı, kullanıcı cihazında DataStore üzerinden lokal tutulur.</li>
+</ul>
+<hr />
+<h1>15. Yerelleştirme (Localization)</h1>
+<ul>
+<li><strong>Diller:</strong> İngilizce (Varsayılan) ve Türkçe (Genişletilmiş destek).</li>
+<li><strong>Temalar:</strong> Açık (Light), Koyu (Dark), Sistem.</li>
+<li><strong>Durum:</strong> Tarih ve numara formatları <code>FormatUtils.kt</code> ve <code>LocalizationUtils.kt</code> ile dinamik olarak yerelleştirilmiştir. UTF-8 kodlama sorunu (Mojibake) Room veritabanı tohumlamasından kaynaklanmış olup <code>MojibakeMigrationUtils.kt</code> ile onarılmıştır. Yerelleştirme işlemleri mevcut sürümde devam eden (Partially implemented) bir süreçtir.</li>
+</ul>
+<hr />
+<h1>16. Veri Modeli (Data Model / Entities)</h1>
+<p>Temel tablolar:
+- <code>WorkoutTemplateEntity</code>, <code>ExerciseEntity</code> (Şablonlar ve Egzersizler)
+- <code>WorkoutSessionEntity</code> (Oturum kaydı)
+- <code>WorkoutExerciseSessionEntity</code> (Oturum içi egzersiz detayı)
+- <code>SetLogEntity</code> (Kayıtlı setler ve notlar)
+- <code>NutritionEntities</code> (Günlük kalori/makro)</p>
+<p><em>(Tüm veri yapısı ilişkisel -Foreign Key- kurallarına uygun olarak Room üzerinde tasarlanmıştır).</em></p>
+<hr />
+<h1>17. Veritabanı ve Stabilite Tarihçesi (Database Evolution &amp; Stability History)</h1>
+<ul>
+<li><strong>Phase 11A.1 - 11A.3:</strong> Foreign Key çakışmaları ve Kardiyo ekranı sonsuz yüklenme sorunları çözüldü.</li>
+<li><strong>Phase 11A.5 - 11A.6:</strong> Titreşim izni kilitlenmeleri (crash) ve not görünürlüğü hataları onarıldı.</li>
+<li><strong>Phase 11A.7 - 11A.10:</strong> Tema (Light/Dark) desteği ve zamanlayıcı stabilizasyonu sağlandı.</li>
+<li><strong>Phase 11A.11 - 11A.13:</strong> UTF-8 Türkçe karakter bozulmaları (mojibake) paketleme seviyesinde giderildi.</li>
+<li><strong>Phase 11A.14 (Mevcut Durum):</strong> Smart Recommendation <code>REST_OR_WALK</code> rotasyon çökmesi (crash) ve eski (legacy) Room kayıtlarındaki bozuk metinlerin tek seferlik onarımı sağlandı.</li>
+</ul>
+<hr />
+<h1>18. QA ve Test Geçmişi (QA / Testing History)</h1>
+<ul>
+<li>Testler genel olarak <strong>Windows geliştirme ortamında ve Android Studio Emülatörü</strong> üzerinde yürütülmektedir.</li>
+<li>Uygulama, <code>EncodingValidationTest</code> ve <code>GetProgramRiskRemindersUseCaseTest</code> gibi Unit Testleri içermektedir.</li>
+<li>Fiziksel cihaz doğrulaması kısıtlıdır; özellikle <em>Titreşim (Vibration)</em> davranışı kod bazlı varsayımlara dayanmaktadır.</li>
+</ul>
+<hr />
+<h1>19. Bilinen Mevcut Sorunlar (Current Known Issues)</h1>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Etki Seviyesi</th>
+<th style="text-align: left;">Sorun (Issue)</th>
+<th style="text-align: left;">Durum (Status)</th>
+<th style="text-align: left;">Sonraki Adım</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">Kritik (Blocker)</td>
+<td style="text-align: left;"><code>REST_OR_WALK</code> modunda çökme (Crash)</td>
+<td style="text-align: left;">Çözüldü (Phase 11A.14)</td>
+<td style="text-align: left;">Emülatörde QA Doğrulaması</td>
+</tr>
+<tr>
+<td style="text-align: left;">Yüksek</td>
+<td style="text-align: left;">Tohumlanmış (Seeded) veri Mojibake karakterleri</td>
+<td style="text-align: left;">Çözüldü (Phase 11A.14)</td>
+<td style="text-align: left;">Emülatörde QA Doğrulaması</td>
+</tr>
+<tr>
+<td style="text-align: left;">Orta</td>
+<td style="text-align: left;">UI dili değişirken yaşanan siyah parlama (Black flash)</td>
+<td style="text-align: left;">Kısmen Çözüldü</td>
+<td style="text-align: left;">Activity recreation onarımı</td>
+</tr>
+<tr>
+<td style="text-align: left;">Düşük</td>
+<td style="text-align: left;">Uygulamanın kalan bazı çevirileri</td>
+<td style="text-align: left;">Devam Ediyor</td>
+<td style="text-align: left;">Kapsamlı string review</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1>20. UX / Tasarım Değerlendirmesi (Current UX / Design Assessment)</h1>
+<p>FitPilot Beta, Material 3 standartlarını başarılı bir şekilde uygulamaktadır. Active Workout ekranı, antrenman sırasındaki etkileşimleri hızlandırmak üzere tasarlanmıştır. Ancak, bazı bileşenler (özellikle veri grafikleri ve analitik paneli) hala erken dönem prototip (early prototype) hissini korumaktadır. Açık/Koyu tema desteği tamamlanmıştır ve okunabilirlik tatmin edicidir.</p>
+<hr />
+<h1>21. Marka ve Ürün Kimliği (Brand &amp; Product Identity)</h1>
+<p><strong>Önceki Adı:</strong> GymFlow AI
+<strong>Yeni Adı:</strong> FitPilot Beta
+Karar: Ürün doğrudan bir "Yapay Zeka Chatbotu" gibi konumlandırılmak yerine, sağlam ve güvenilir bir fitness aracı olarak tasarlanmıştır. Gelecekteki marka kimliği de hareket, ilerleme ve stabiliteyi yansıtmalıdır.</p>
+<hr />
+<h1>22. Yol Haritası (Roadmap)</h1>
+<p><strong>Mevcut Aşama:</strong> Phase 11A.14 (Blocker Hotfix)
+<strong>Phase 11B Beklentileri:</strong> 
+- <strong>Serbest Antrenman (Free Workout) ve Program Builder:</strong> Kullanıcıların tamamen boş bir şablondan kendi antrenmanlarını oluşturabilmeleri.
+- <strong>Egzersiz Kütüphanesi:</strong> Kas grubuna göre filtreleme, alternatif egzersizler.
+- İleri Seviye (Future): Hesap ve bulut senkronizasyonu, gelişmiş başarımlar (streaks).</p>
+<hr />
+<h1>23. Önerilen Mimari Yaklaşım (Recommended Product Architecture)</h1>
+<ul>
+<li>Room ve Offline-first yaklaşımı kesinlikle korunmalıdır.</li>
+<li>Smart Coaching mantığı deterministik (AI'dan bağımsız) kalmaya devam etmelidir.</li>
+<li>Uygulama, gereksiz UI veya kütüphane "rewrite" döngülerinden kaçınarak, mevcut Clean Architecture üzerine inşa edilmeye devam etmelidir.</li>
+</ul>
+<hr />
+<h1>24. Ek - Proje Dosya Haritası (Appendix — Project Module Map)</h1>
+<p>Uygulamanın mevcut kök modülleri:
+- <code>app/src/main/java/com/doruk/fitprogress/</code>
+  - <code>MainActivity.kt</code> &amp; <code>GymFlowApplication.kt</code>
+  - <code>core/database/</code> (GymFlowDatabase, DatabaseSeeder, MojibakeMigrationUtils)
+  - <code>core/domain/</code> (Progression, Coaching ve AI UseCaseleri)
+  - <code>feature/activeworkout/</code> (ActiveWorkoutScreen, vb.)
+  - <code>feature/history/</code> (WorkoutHistoryScreen)
+  - <code>feature/coaching/</code> (CoachingScreen)
+  - <code>theme/</code> (Theme, Color, Type)</p>
+<hr />
+<h1>25. Son Değerlendirme (Final Executive Assessment)</h1>
+<p><strong>Neler İyi Çalışıyor?</strong>
+Offline-first mimari, lokal veritabanı, çekirdek ağırlık antrenmanı etkileşimi, dinlenme zamanlayıcısı ve deterministik Akıllı Koçluk.</p>
+<p><strong>Nelerin Düzeltilmesi Gerekiyor?</strong>
+Son (Phase 11A.14) ile çözülen UTF-8 kodlama problemleri ve geçişteki crash sorunlarının son cihaz kontrolleri.</p>
+<p><strong>Phase 11B İçin Engel Nedir?</strong>
+Phase 11A.14 QA testlerinin nihai onayı beklenmektedir. Uygulama henüz Play Store standartlarında "production-ready" değildir ancak temel ürün kimliğini yansıtan stabil bir Beta adayıdır.</p>
+    </body>
+    </html>
+    
