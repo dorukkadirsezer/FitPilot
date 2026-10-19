@@ -53,7 +53,8 @@ data class WorkoutExerciseSessionEntity(
     val exerciseId: String,
     val orderIndex: Int,
     val supersetGroupId: String?,
-    val note: String? = null
+    val note: String? = null,
+    val restTimerSeconds: Int? = null
 )
 
 @Entity(

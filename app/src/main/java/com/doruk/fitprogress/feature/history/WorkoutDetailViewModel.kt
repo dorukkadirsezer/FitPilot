@@ -7,6 +7,7 @@ import com.doruk.fitprogress.core.ai.AiRepository
 import com.doruk.fitprogress.core.ai.AiWorkoutSummaryInput
 import com.doruk.fitprogress.core.database.dao.WorkoutDao
 import com.doruk.fitprogress.core.database.entity.WorkoutDetailDto
+import com.doruk.fitprogress.core.domain.usecase.ExportSessionToJsonUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -20,6 +21,7 @@ import javax.inject.Inject
 class WorkoutDetailViewModel @Inject constructor(
     private val dao: WorkoutDao,
     private val aiRepository: AiRepository,
+    private val exportSessionToJsonUseCase: ExportSessionToJsonUseCase,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -36,6 +38,9 @@ class WorkoutDetailViewModel @Inject constructor(
 
     private val _isGeneratingSummary = MutableStateFlow(false)
     val isGeneratingSummary: StateFlow<Boolean> = _isGeneratingSummary.asStateFlow()
+
+    private val _exportStatus = MutableStateFlow<String?>(null)
+    val exportStatus: StateFlow<String?> = _exportStatus.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -79,5 +84,20 @@ class WorkoutDetailViewModel @Inject constructor(
             
             _isGeneratingSummary.value = false
         }
+    }
+
+    fun exportToCoach() {
+        viewModelScope.launch {
+            val result = exportSessionToJsonUseCase(sessionId)
+            if (result.isSuccess) {
+                _exportStatus.value = "Workout data copied to clipboard"
+            } else {
+                _exportStatus.value = "Failed to export data"
+            }
+        }
+    }
+
+    fun clearExportStatus() {
+        _exportStatus.value = null
     }
 }

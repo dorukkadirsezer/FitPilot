@@ -6,6 +6,7 @@ import com.doruk.fitprogress.core.database.dao.WorkoutDao
 import com.doruk.fitprogress.core.database.entity.WorkoutTemplateEntity
 import com.doruk.fitprogress.core.domain.usecase.AnalyticsDashboardSummary
 import com.doruk.fitprogress.core.domain.usecase.CalculateAnalyticsUseCase
+import com.doruk.fitprogress.core.domain.usecase.SyncCoachPlanUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,7 +19,8 @@ import javax.inject.Inject
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
     private val workoutDao: WorkoutDao,
-    private val calculateAnalyticsUseCase: CalculateAnalyticsUseCase
+    private val calculateAnalyticsUseCase: CalculateAnalyticsUseCase,
+    private val syncCoachPlanUseCase: SyncCoachPlanUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -55,11 +57,38 @@ class DashboardViewModel @Inject constructor(
             }
         }
     }
+
+    fun importCoachPlan() {
+        viewModelScope.launch {
+            val result = syncCoachPlanUseCase()
+            if (result.isSuccess) {
+                val sessionId = result.getOrNull()!!
+                _uiState.value = _uiState.value.copy(
+                    importError = null,
+                    importedSessionId = sessionId
+                )
+            } else {
+                _uiState.value = _uiState.value.copy(
+                    importError = result.exceptionOrNull()?.message ?: "Failed to import JSON plan"
+                )
+            }
+        }
+    }
+
+    fun clearImportError() {
+        _uiState.value = _uiState.value.copy(importError = null)
+    }
+
+    fun clearImportedSessionId() {
+        _uiState.value = _uiState.value.copy(importedSessionId = null)
+    }
 }
 
 data class DashboardUiState(
     val isLoading: Boolean = true,
     val templates: List<WorkoutTemplateEntity> = emptyList(),
     val suggestedTemplateId: String? = null,
-    val analyticsSummary: AnalyticsDashboardSummary? = null
+    val analyticsSummary: AnalyticsDashboardSummary? = null,
+    val importError: String? = null,
+    val importedSessionId: String? = null
 )

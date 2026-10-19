@@ -265,7 +265,7 @@ class ActiveWorkoutViewModel @Inject constructor(
                         supersetGroupId = exDetails.templateExercise.supersetGroupId,
                         supersetRoundCount = exDetails.templateExercise.supersetRoundCount,
                         supersetAdviceText = null,
-                        defaultRestSeconds = exDetails.templateExercise.restSeconds,
+                        defaultRestSeconds = existingExSession?.restTimerSeconds ?: exDetails.templateExercise.restSeconds,
                         sets = activeSets,
                         note = existingExSession?.note
                     )
