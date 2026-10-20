@@ -12,7 +12,8 @@ data class WorkoutTemplateEntity(
     val dayCode: String,
     val dayFocus: String,
     val defaultCardioType: String?,
-    val defaultCardioMinutes: Int?
+    val defaultCardioMinutes: Int?,
+    val isAiProgram: Boolean = false
 )
 
 @Entity(

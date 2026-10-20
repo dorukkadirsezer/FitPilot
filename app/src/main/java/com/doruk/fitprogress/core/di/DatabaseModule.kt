@@ -43,12 +43,18 @@ object DatabaseModule {
             }
         }
 
+        val MIGRATION_7_8 = object : androidx.room.migration.Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE workout_templates ADD COLUMN isAiProgram INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         return Room.databaseBuilder(
             context,
             GymFlowDatabase::class.java,
             "gymflow_database"
         )
-        .addMigrations(MIGRATION_5_6, MIGRATION_6_7)
+        .addMigrations(MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
         .fallbackToDestructiveMigration()
         .addCallback(object : RoomDatabase.Callback() {
             override fun onCreate(db: SupportSQLiteDatabase) {

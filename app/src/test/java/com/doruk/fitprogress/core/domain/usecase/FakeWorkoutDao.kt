@@ -9,11 +9,15 @@ open class FakeWorkoutDao : WorkoutDao {
     override suspend fun insertExercises(exercises: List<ExerciseEntity>) {}
     override suspend fun insertTemplates(templates: List<WorkoutTemplateEntity>) {}
     override suspend fun insertTemplateExercises(exercises: List<WorkoutTemplateExerciseEntity>) {}
+    override suspend fun deleteTemplateExercisesByTemplateId(templateId: String) {}
+    override suspend fun deleteAiProgramTemplates() {}
     override suspend fun insertWarmupInstructions(instructions: List<TemplateWarmupInstructionEntity>) {}
     override suspend fun insertWarmupSets(warmups: List<TemplateWarmupSetEntity>) {}
     override fun getAllTemplates(): Flow<List<WorkoutTemplateEntity>> = emptyFlow()
     override suspend fun getAllTemplatesSync(): List<WorkoutTemplateEntity> = emptyList()
+    override suspend fun getAiProgramTemplatesSync(): List<WorkoutTemplateEntity> = emptyList()
     override suspend fun getTemplateByDayCode(code: String): WorkoutTemplateEntity? = null
+    override suspend fun getTemplateExercisesSync(templateId: String): List<WorkoutTemplateExerciseEntity> = emptyList()
     override fun getAllExercises(): Flow<List<ExerciseEntity>> = emptyFlow()
     override suspend fun getAllExercisesSync(): List<ExerciseEntity> = emptyList()
     override suspend fun getTemplateWithDetails(templateId: String): TemplateWithDetails? = null
