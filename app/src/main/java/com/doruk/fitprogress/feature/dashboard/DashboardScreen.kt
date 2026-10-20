@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -48,10 +49,14 @@ fun DashboardScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val snackbarHostState = androidx.compose.runtime.remember { SnackbarHostState() }
 
-    androidx.compose.runtime.LaunchedEffect(uiState.importError) {
+    androidx.compose.runtime.LaunchedEffect(uiState.importError, uiState.importSuccessMessage) {
         if (uiState.importError != null) {
             snackbarHostState.showSnackbar(uiState.importError!!)
-            viewModel.clearImportError()
+            viewModel.clearImportMessages()
+        }
+        if (uiState.importSuccessMessage != null) {
+            snackbarHostState.showSnackbar(uiState.importSuccessMessage!!)
+            viewModel.clearImportMessages()
         }
     }
 
@@ -92,16 +97,13 @@ fun DashboardScreen(
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         floatingActionButton = {
-            FloatingActionButton(
+            ExtendedFloatingActionButton(
                 onClick = { viewModel.importCoachPlan() },
                 containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            ) {
-                Icon(
-                    imageVector = androidx.compose.material.icons.Icons.Default.Settings, // Fallback icon, could use something better
-                    contentDescription = "Import Coach Plan"
-                )
-            }
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                icon = { Icon(Icons.Default.Download, contentDescription = null) },
+                text = { Text("Import Coach JSON") }
+            )
         }
     ) { padding ->
         if (uiState.isLoading) {
@@ -115,7 +117,7 @@ fun DashboardScreen(
                     .padding(padding)
                     .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
-                contentPadding = PaddingValues(bottom = 24.dp)
+                contentPadding = PaddingValues(bottom = 96.dp)
             ) {
                 item {
                     GradientHeaderCard(

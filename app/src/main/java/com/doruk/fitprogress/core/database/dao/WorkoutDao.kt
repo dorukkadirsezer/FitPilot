@@ -20,6 +20,9 @@ interface WorkoutDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTemplateExercises(exercises: List<WorkoutTemplateExerciseEntity>)
 
+    @Query("DELETE FROM workout_template_exercises WHERE templateId = :templateId")
+    suspend fun deleteTemplateExercisesByTemplateId(templateId: String)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertWarmupInstructions(instructions: List<TemplateWarmupInstructionEntity>)
 
