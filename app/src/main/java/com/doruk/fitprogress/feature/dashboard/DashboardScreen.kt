@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -49,13 +50,21 @@ fun DashboardScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val snackbarHostState = androidx.compose.runtime.remember { SnackbarHostState() }
 
-    androidx.compose.runtime.LaunchedEffect(uiState.importError, uiState.importSuccessMessage) {
+    androidx.compose.runtime.LaunchedEffect(uiState.importError, uiState.importSuccessMessage, uiState.exportError, uiState.exportSuccessMessage) {
         if (uiState.importError != null) {
             snackbarHostState.showSnackbar(uiState.importError!!)
             viewModel.clearImportMessages()
         }
         if (uiState.importSuccessMessage != null) {
             snackbarHostState.showSnackbar(uiState.importSuccessMessage!!)
+            viewModel.clearImportMessages()
+        }
+        if (uiState.exportError != null) {
+            snackbarHostState.showSnackbar(uiState.exportError!!)
+            viewModel.clearImportMessages()
+        }
+        if (uiState.exportSuccessMessage != null) {
+            snackbarHostState.showSnackbar(uiState.exportSuccessMessage!!)
             viewModel.clearImportMessages()
         }
     }
@@ -88,6 +97,9 @@ fun DashboardScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.app_name), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
                 actions = {
+                    IconButton(onClick = { viewModel.exportProgram() }) {
+                        Icon(Icons.Default.Share, contentDescription = "Export Program Data", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                     IconButton(onClick = onNavigateToAiSettings) {
                         Icon(Icons.Default.Settings, contentDescription = "Settings", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }

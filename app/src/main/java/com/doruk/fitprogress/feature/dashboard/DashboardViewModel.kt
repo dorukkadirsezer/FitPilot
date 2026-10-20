@@ -7,6 +7,7 @@ import com.doruk.fitprogress.core.database.entity.WorkoutTemplateEntity
 import com.doruk.fitprogress.core.domain.usecase.AnalyticsDashboardSummary
 import com.doruk.fitprogress.core.domain.usecase.CalculateAnalyticsUseCase
 import com.doruk.fitprogress.core.domain.usecase.SyncCoachPlanUseCase
+import com.doruk.fitprogress.core.domain.usecase.ExportProgramToJsonUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,7 +21,8 @@ import javax.inject.Inject
 class DashboardViewModel @Inject constructor(
     private val workoutDao: WorkoutDao,
     private val calculateAnalyticsUseCase: CalculateAnalyticsUseCase,
-    private val syncCoachPlanUseCase: SyncCoachPlanUseCase
+    private val syncCoachPlanUseCase: SyncCoachPlanUseCase,
+    private val exportProgramToJsonUseCase: ExportProgramToJsonUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -78,11 +80,28 @@ class DashboardViewModel @Inject constructor(
     }
 
     fun clearImportMessages() {
-        _uiState.value = _uiState.value.copy(importError = null, importSuccessMessage = null)
+        _uiState.value = _uiState.value.copy(importError = null, importSuccessMessage = null, exportSuccessMessage = null, exportError = null)
     }
 
     fun clearImportedSessionId() {
         _uiState.value = _uiState.value.copy(importedSessionId = null)
+    }
+
+    fun exportProgram() {
+        viewModelScope.launch {
+            val result = exportProgramToJsonUseCase()
+            if (result.isSuccess) {
+                _uiState.value = _uiState.value.copy(
+                    exportError = null,
+                    exportSuccessMessage = "Program copied to clipboard!"
+                )
+            } else {
+                _uiState.value = _uiState.value.copy(
+                    exportError = result.exceptionOrNull()?.message ?: "Failed to export program",
+                    exportSuccessMessage = null
+                )
+            }
+        }
     }
 }
 
@@ -93,5 +112,7 @@ data class DashboardUiState(
     val analyticsSummary: AnalyticsDashboardSummary? = null,
     val importError: String? = null,
     val importSuccessMessage: String? = null,
-    val importedSessionId: String? = null
+    val importedSessionId: String? = null,
+    val exportError: String? = null,
+    val exportSuccessMessage: String? = null
 )

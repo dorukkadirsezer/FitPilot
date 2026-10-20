@@ -6,7 +6,8 @@ import com.doruk.fitprogress.core.database.dao.WorkoutDao
 import com.doruk.fitprogress.core.database.entity.ExerciseEntity
 import com.doruk.fitprogress.core.database.entity.WorkoutTemplateEntity
 import com.doruk.fitprogress.core.database.entity.WorkoutTemplateExerciseEntity
-import com.doruk.fitprogress.core.domain.model.CoachWorkoutPlanDto
+import com.doruk.fitprogress.core.datastore.ProfileDataStore
+import com.doruk.fitprogress.core.domain.model.ProgramPlanDto
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -17,6 +18,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 
 class SyncCoachPlanUseCase @Inject constructor(
     private val dao: WorkoutDao,
+    private val profileDataStore: ProfileDataStore,
     @ApplicationContext private val context: Context
 ) {
     suspend operator fun invoke(): Result<String> {
@@ -32,40 +34,46 @@ class SyncCoachPlanUseCase @Inject constructor(
         return withContext(Dispatchers.IO) {
             try {
                 val format = Json { ignoreUnknownKeys = true }
-            val plan: CoachWorkoutPlanDto = format.decodeFromString(jsonStr)
+                val plan: ProgramPlanDto = format.decodeFromString(jsonStr)
 
-            // Ensure "AI Coach" template exists
-            val templates = dao.getAllTemplatesSync()
-            var template = templates.find { it.dayCode == "AI_COACH" }
-
-            if (template == null) {
-                template = WorkoutTemplateEntity(
-                    id = UUID.randomUUID().toString(),
-                    name = plan.workoutName,
-                    dayCode = "AI_COACH",
-                    dayFocus = "Custom",
-                    defaultCardioType = null,
-                    defaultCardioMinutes = null
+                // Save profile data
+                profileDataStore.setAthleteName(plan.athlete)
+                profileDataStore.setNutritionTargets(
+                    calories = plan.dailyNutritionTarget.calories,
+                    protein = plan.dailyNutritionTarget.proteinGrams,
+                    fat = plan.dailyNutritionTarget.fatGrams,
+                    carbs = plan.dailyNutritionTarget.carbsGrams,
+                    steps = plan.dailyNutritionTarget.dailyStepsTarget,
+                    sleep = plan.dailyNutritionTarget.sleepHoursTarget
                 )
-            } else {
-                template = template.copy(name = plan.workoutName)
-                // Clear old template exercises
-                dao.deleteTemplateExercisesByTemplateId(template.id)
-            }
-            dao.insertTemplates(listOf(template))
 
-            // Ensure all exercises exist
-            val allExercises = dao.getAllExercisesSync()
-            val exercisesMap = allExercises.associateBy { it.id }
+                // Delete old AI programs
+                dao.deleteAiProgramTemplates()
 
-            val newExercisesToInsert = mutableListOf<ExerciseEntity>()
-            plan.exercises.forEach { planEx ->
-                if (!exercisesMap.containsKey(planEx.id)) {
-                    // Try by name matching if ID is different? For now, insert if ID missing
-                    val existingByName = allExercises.find { it.name.equals(planEx.name, ignoreCase = true) }
-                    if (existingByName == null) {
-                        newExercisesToInsert.add(
-                            ExerciseEntity(
+                // Insert new templates
+                val templatesToInsert = mutableListOf<WorkoutTemplateEntity>()
+                val templateExercisesToInsert = mutableListOf<WorkoutTemplateExerciseEntity>()
+                val newExercisesToInsert = mutableMapOf<String, ExerciseEntity>()
+
+                val allExercises = dao.getAllExercisesSync()
+                val exercisesMap = allExercises.associateBy { it.id }
+
+                for (workout in plan.workouts) {
+                    val templateId = UUID.randomUUID().toString()
+                    val template = WorkoutTemplateEntity(
+                        id = templateId,
+                        name = workout.workoutName,
+                        dayCode = "PROGRAM_DAY_${workout.dayNumber}",
+                        dayFocus = "AI Coach Program",
+                        defaultCardioType = null,
+                        defaultCardioMinutes = null,
+                        isAiProgram = true
+                    )
+                    templatesToInsert.add(template)
+
+                    workout.exercises.forEachIndexed { index, planEx ->
+                        if (!exercisesMap.containsKey(planEx.id) && !newExercisesToInsert.containsKey(planEx.id)) {
+                            newExercisesToInsert[planEx.id] = ExerciseEntity(
                                 id = planEx.id,
                                 name = planEx.name,
                                 muscleGroup = "Other",
@@ -79,43 +87,44 @@ class SyncCoachPlanUseCase @Inject constructor(
                                 createdAt = System.currentTimeMillis(),
                                 updatedAt = System.currentTimeMillis()
                             )
+                        }
+
+                        templateExercisesToInsert.add(
+                            WorkoutTemplateExerciseEntity(
+                                id = UUID.randomUUID().toString(),
+                                templateId = templateId,
+                                exerciseId = planEx.id,
+                                orderIndex = index + 1,
+                                isSuperset = false,
+                                supersetGroupId = null,
+                                supersetRoundCount = null,
+                                targetSets = planEx.targetSets,
+                                targetRepsMin = planEx.targetReps ?: (planEx.targetRepsMin ?: 10),
+                                targetRepsMax = planEx.targetReps ?: (planEx.targetRepsMax ?: 10),
+                                targetWeightMin = planEx.targetLoad,
+                                targetWeightMax = planEx.targetLoad,
+                                weightUnit = "kg",
+                                restSeconds = planEx.restTimerSeconds ?: 90,
+                                rpeMin = planEx.targetRpe,
+                                rpeMax = planEx.targetRpe
+                            )
                         )
-                    } else {
-                        // If ID from JSON differs but name exists, should ideally map it.
-                        // For simplicity, sticking to ID matching or new insert.
                     }
                 }
-            }
-            if (newExercisesToInsert.isNotEmpty()) {
-                dao.insertExercises(newExercisesToInsert)
-            }
 
-            // Create Template Exercises
-            val templateExercises = plan.exercises.mapIndexed { index, planEx ->
-                WorkoutTemplateExerciseEntity(
-                    id = UUID.randomUUID().toString(),
-                    templateId = template.id,
-                    exerciseId = planEx.id,
-                    orderIndex = index + 1,
-                    isSuperset = false,
-                    supersetGroupId = null,
-                    supersetRoundCount = null,
-                    targetSets = planEx.targetSets,
-                    targetRepsMin = planEx.targetReps ?: (planEx.targetRepsMin ?: 10),
-                    targetRepsMax = planEx.targetReps ?: (planEx.targetRepsMax ?: 10),
-                    targetWeightMin = planEx.targetLoad,
-                    targetWeightMax = planEx.targetLoad,
-                    weightUnit = "kg",
-                    restSeconds = planEx.restTimerSeconds ?: 90,
-                    rpeMin = planEx.targetRpe,
-                    rpeMax = planEx.targetRpe
-                )
-            }
-            if (templateExercises.isNotEmpty()) {
-                dao.insertTemplateExercises(templateExercises)
-            }
+                if (newExercisesToInsert.isNotEmpty()) {
+                    dao.insertExercises(newExercisesToInsert.values.toList())
+                }
 
-                Result.success("Imported: ${plan.workoutName} (${plan.exercises.size} exercises)")
+                if (templatesToInsert.isNotEmpty()) {
+                    dao.insertTemplates(templatesToInsert)
+                }
+
+                if (templateExercisesToInsert.isNotEmpty()) {
+                    dao.insertTemplateExercises(templateExercisesToInsert)
+                }
+
+                Result.success("Program imported successfully! ${templatesToInsert.size} workouts added.")
             } catch (e: kotlinx.serialization.SerializationException) {
                 Result.failure(Exception("Invalid JSON format"))
             } catch (e: Exception) {
