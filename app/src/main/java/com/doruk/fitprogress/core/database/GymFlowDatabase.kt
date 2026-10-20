@@ -32,7 +32,7 @@ import com.doruk.fitprogress.core.database.entity.*
         CardioSessionEntity::class,
         AiInteractionLogEntity::class
     ],
-    version = 7,
+    version = 8,
     exportSchema = false
 )
 abstract class GymFlowDatabase : RoomDatabase() {

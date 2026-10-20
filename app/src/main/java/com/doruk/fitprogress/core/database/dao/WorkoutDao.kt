@@ -23,6 +23,9 @@ interface WorkoutDao {
     @Query("DELETE FROM workout_template_exercises WHERE templateId = :templateId")
     suspend fun deleteTemplateExercisesByTemplateId(templateId: String)
 
+    @Query("DELETE FROM workout_templates WHERE isAiProgram = 1")
+    suspend fun deleteAiProgramTemplates()
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertWarmupInstructions(instructions: List<TemplateWarmupInstructionEntity>)
 
@@ -35,8 +38,14 @@ interface WorkoutDao {
     @Query("SELECT * FROM workout_templates")
     suspend fun getAllTemplatesSync(): List<WorkoutTemplateEntity>
 
+    @Query("SELECT * FROM workout_templates WHERE isAiProgram = 1")
+    suspend fun getAiProgramTemplatesSync(): List<WorkoutTemplateEntity>
+
     @Query("SELECT * FROM workout_templates WHERE dayCode = :code LIMIT 1")
     suspend fun getTemplateByDayCode(code: String): WorkoutTemplateEntity?
+
+    @Query("SELECT * FROM workout_template_exercises WHERE templateId = :templateId ORDER BY orderIndex ASC")
+    suspend fun getTemplateExercisesSync(templateId: String): List<WorkoutTemplateExerciseEntity>
 
     @Query("SELECT * FROM exercises")
     fun getAllExercises(): Flow<List<ExerciseEntity>>
