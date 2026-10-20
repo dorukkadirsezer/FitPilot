@@ -62,21 +62,23 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             val result = syncCoachPlanUseCase()
             if (result.isSuccess) {
-                val sessionId = result.getOrNull()!!
+                val successMessage = result.getOrNull()!!
                 _uiState.value = _uiState.value.copy(
                     importError = null,
-                    importedSessionId = sessionId
+                    importSuccessMessage = successMessage,
+                    importedSessionId = null
                 )
             } else {
                 _uiState.value = _uiState.value.copy(
-                    importError = result.exceptionOrNull()?.message ?: "Failed to import JSON plan"
+                    importError = result.exceptionOrNull()?.message ?: "Failed to import JSON plan",
+                    importSuccessMessage = null
                 )
             }
         }
     }
 
-    fun clearImportError() {
-        _uiState.value = _uiState.value.copy(importError = null)
+    fun clearImportMessages() {
+        _uiState.value = _uiState.value.copy(importError = null, importSuccessMessage = null)
     }
 
     fun clearImportedSessionId() {
@@ -90,5 +92,6 @@ data class DashboardUiState(
     val suggestedTemplateId: String? = null,
     val analyticsSummary: AnalyticsDashboardSummary? = null,
     val importError: String? = null,
+    val importSuccessMessage: String? = null,
     val importedSessionId: String? = null
 )

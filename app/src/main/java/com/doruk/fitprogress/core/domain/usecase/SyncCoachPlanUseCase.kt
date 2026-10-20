@@ -4,10 +4,8 @@ import android.content.ClipboardManager
 import android.content.Context
 import com.doruk.fitprogress.core.database.dao.WorkoutDao
 import com.doruk.fitprogress.core.database.entity.ExerciseEntity
-import com.doruk.fitprogress.core.database.entity.SetLogEntity
-import com.doruk.fitprogress.core.database.entity.WorkoutExerciseSessionEntity
-import com.doruk.fitprogress.core.database.entity.WorkoutSessionEntity
 import com.doruk.fitprogress.core.database.entity.WorkoutTemplateEntity
+import com.doruk.fitprogress.core.database.entity.WorkoutTemplateExerciseEntity
 import com.doruk.fitprogress.core.domain.model.CoachWorkoutPlanDto
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -39,17 +37,22 @@ class SyncCoachPlanUseCase @Inject constructor(
             // Ensure "AI Coach" template exists
             val templates = dao.getAllTemplatesSync()
             var template = templates.find { it.dayCode == "AI_COACH" }
+
             if (template == null) {
                 template = WorkoutTemplateEntity(
                     id = UUID.randomUUID().toString(),
-                    name = "AI Coach Plan",
+                    name = plan.workoutName,
                     dayCode = "AI_COACH",
                     dayFocus = "Custom",
                     defaultCardioType = null,
                     defaultCardioMinutes = null
                 )
-                dao.insertTemplates(listOf(template))
+            } else {
+                template = template.copy(name = plan.workoutName)
+                // Clear old template exercises
+                dao.deleteTemplateExercisesByTemplateId(template.id)
             }
+            dao.insertTemplates(listOf(template))
 
             // Ensure all exercises exist
             val allExercises = dao.getAllExercisesSync()
@@ -87,59 +90,32 @@ class SyncCoachPlanUseCase @Inject constructor(
                 dao.insertExercises(newExercisesToInsert)
             }
 
-            // Create new WorkoutSessionEntity
-            val sessionId = UUID.randomUUID().toString()
-            val session = WorkoutSessionEntity(
-                id = sessionId,
-                templateId = template.id,
-                startedAt = System.currentTimeMillis(),
-                finishedAt = null,
-                durationSeconds = null,
-                totalWorkingVolumeKg = null,
-                averageRpe = null,
-                cardioCompleted = false,
-                note = plan.notes
-            )
-            dao.insertWorkoutSession(session)
-
-            // Create Exercise Sessions and Set Logs
-            plan.exercises.forEachIndexed { index, planEx ->
-                // Map ID correctly if existing by name was found? Just use planEx.id as we inserted if missing
-                val exerciseSessionId = UUID.randomUUID().toString()
-                val exSession = WorkoutExerciseSessionEntity(
-                    id = exerciseSessionId,
-                    workoutSessionId = sessionId,
+            // Create Template Exercises
+            val templateExercises = plan.exercises.mapIndexed { index, planEx ->
+                WorkoutTemplateExerciseEntity(
+                    id = UUID.randomUUID().toString(),
+                    templateId = template.id,
                     exerciseId = planEx.id,
-                    orderIndex = index,
+                    orderIndex = index + 1,
+                    isSuperset = false,
                     supersetGroupId = null,
-                    note = planEx.notes,
-                    restTimerSeconds = planEx.restTimerSeconds
+                    supersetRoundCount = null,
+                    targetSets = planEx.targetSets,
+                    targetRepsMin = planEx.targetReps ?: (planEx.targetRepsMin ?: 10),
+                    targetRepsMax = planEx.targetReps ?: (planEx.targetRepsMax ?: 10),
+                    targetWeightMin = planEx.targetLoad,
+                    targetWeightMax = planEx.targetLoad,
+                    weightUnit = "kg",
+                    restSeconds = planEx.restTimerSeconds ?: 90,
+                    rpeMin = planEx.targetRpe,
+                    rpeMax = planEx.targetRpe
                 )
-                dao.insertWorkoutExerciseSession(exSession)
-
-                // Add Set Logs
-                val setsToCreate = planEx.targetSets
-                for (i in 1..setsToCreate) {
-                    val setLog = SetLogEntity(
-                        id = UUID.randomUUID().toString(),
-                        workoutExerciseSessionId = exerciseSessionId,
-                        setNumber = i,
-                        setType = "WORKING",
-                        targetWeight = planEx.targetLoad,
-                        actualWeight = null,
-                        weightUnit = "kg", // Or deduce from user preference
-                        targetReps = planEx.targetReps ?: (planEx.targetRepsMax ?: 10),
-                        actualReps = null,
-                        rpe = planEx.targetRpe,
-                        completed = false,
-                        isSkipped = false,
-                        note = null
-                    )
-                    dao.insertSetLog(setLog)
-                }
+            }
+            if (templateExercises.isNotEmpty()) {
+                dao.insertTemplateExercises(templateExercises)
             }
 
-                Result.success(sessionId)
+                Result.success("Imported: ${plan.workoutName} (${plan.exercises.size} exercises)")
             } catch (e: kotlinx.serialization.SerializationException) {
                 Result.failure(Exception("Invalid JSON format"))
             } catch (e: Exception) {
