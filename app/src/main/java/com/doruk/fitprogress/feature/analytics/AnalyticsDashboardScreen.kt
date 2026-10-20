@@ -8,6 +8,7 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material3.*
 import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -26,7 +27,7 @@ fun AnalyticsDashboardScreen(
     onNavigateBack: () -> Unit,
     viewModel: AnalyticsViewModel = hiltViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -59,9 +60,9 @@ fun AnalyticsDashboardScreen(
 
 @Composable
 fun AnalyticsContent(summary: AnalyticsDashboardSummary, viewModel: AnalyticsViewModel) {
-    val isAiEnabled by viewModel.isAiEnabledFlow.collectAsState(initial = false)
-    val aiReview by viewModel.aiReview.collectAsState()
-    val isAiLoading by viewModel.isAiLoading.collectAsState()
+    val isAiEnabled by viewModel.isAiEnabledFlow.collectAsStateWithLifecycle(initialValue = false)
+    val aiReview by viewModel.aiReview.collectAsStateWithLifecycle()
+    val isAiLoading by viewModel.isAiLoading.collectAsStateWithLifecycle()
 
     Column(
         modifier = Modifier

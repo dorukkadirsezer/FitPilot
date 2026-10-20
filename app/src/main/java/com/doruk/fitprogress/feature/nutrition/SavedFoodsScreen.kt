@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -29,7 +30,7 @@ fun SavedFoodsScreen(
     onNavigateToEditFood: (String) -> Unit,
     viewModel: SavedFoodsViewModel = hiltViewModel()
 ) {
-    val state by viewModel.uiState.collectAsState()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
     var selectedFood by remember { mutableStateOf<FoodItemEntity?>(null) }
     var multiplierText by remember { mutableStateOf("1.0") }
 

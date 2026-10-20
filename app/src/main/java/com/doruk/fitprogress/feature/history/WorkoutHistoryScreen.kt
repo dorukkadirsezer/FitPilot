@@ -7,7 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,7 +29,7 @@ fun WorkoutHistoryScreen(
     onNavigateToDetail: (String) -> Unit,
     viewModel: WorkoutHistoryViewModel = hiltViewModel()
 ) {
-    val history by viewModel.history.collectAsState()
+    val history by viewModel.history.collectAsStateWithLifecycle()
     val format = SimpleDateFormat("MMM dd, yyyy - HH:mm", Locale.getDefault())
 
     Scaffold(

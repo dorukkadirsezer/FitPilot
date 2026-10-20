@@ -8,7 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,7 +32,7 @@ fun CoachingScreenHost(
     onNavigateToActiveWorkout: (String, String?) -> Unit,
     onNavigateToDashboard: () -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     if (uiState.navigateOutToActiveWorkout) {
         onNavigateToActiveWorkout(uiState.recommendationId ?: "", uiState.selectedTimeLimitedPlanId)
