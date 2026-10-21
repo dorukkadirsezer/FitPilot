@@ -32,7 +32,13 @@ class CalculateProgressionUseCase @Inject constructor(
             return saveAndReturn(exerciseId, latestSessionId, null, exercise.defaultUnit, null, exercise.defaultUnit, "SUPPRESSED_BY_CONTROLLED_MODE", "Progression suppressed to prioritize form in Controlled Mode. Repeat weight.", "DETERMINISTIC")
         }
 
-        val workingSets = setLogs.filter { it.setType == "WORKING" && !it.isSkipped && it.completed }
+        val workingSets = setLogs.filter {
+            it.setType == "WORKING" &&
+            !it.isSkipped &&
+            it.completed &&
+            it.actualWeight != null &&
+            it.actualReps != null
+        }
         if (workingSets.isEmpty()) {
             return saveAndReturn(exerciseId, latestSessionId, null, exercise.defaultUnit, null, exercise.defaultUnit, "INSUFFICIENT_DATA", "No valid working sets found.", "DETERMINISTIC")
         }
@@ -61,7 +67,7 @@ class CalculateProgressionUseCase @Inject constructor(
         val latestWeight = latestSets.first().actualWeight
         val latestUnit = latestSets.first().weightUnit
 
-        if (latestWeight == null) {
+        if (prevWeight == null || latestWeight == null) {
             return saveAndReturn(exerciseId, latestSessionIdToUse, null, latestUnit, null, latestUnit, "INSUFFICIENT_DATA", "Target weight was unspecified. Log a real weight first.", "DETERMINISTIC")
         }
 

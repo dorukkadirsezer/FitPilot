@@ -23,8 +23,12 @@ class SyncCoachPlanUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(): Result<String> {
         val jsonStr = withContext(Dispatchers.Main) {
-            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            clipboard.primaryClip?.getItemAt(0)?.text?.toString()
+            try {
+                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                clipboard.primaryClip?.getItemAt(0)?.text?.toString()
+            } catch (e: Exception) {
+                null
+            }
         }
 
         if (jsonStr.isNullOrBlank()) {
@@ -125,10 +129,8 @@ class SyncCoachPlanUseCase @Inject constructor(
                 }
 
                 Result.success("Program imported successfully! ${templatesToInsert.size} workouts added.")
-            } catch (e: kotlinx.serialization.SerializationException) {
-                Result.failure(Exception("Invalid JSON format"))
             } catch (e: Exception) {
-                Result.failure(e)
+                Result.failure(Exception("Failed to parse program: ${e.message}", e))
             }
         }
     }

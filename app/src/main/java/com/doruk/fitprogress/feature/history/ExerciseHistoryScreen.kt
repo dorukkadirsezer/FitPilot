@@ -7,7 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,9 +29,9 @@ fun ExerciseHistoryScreen(
     onNavigateBack: () -> Unit,
     viewModel: ExerciseHistoryViewModel = hiltViewModel()
 ) {
-    val historySessions by viewModel.historySessions.collectAsState()
-    val suggestion by viewModel.suggestion.collectAsState()
-    val readinessScore by viewModel.readinessScore.collectAsState()
+    val historySessions by viewModel.historySessions.collectAsStateWithLifecycle()
+    val suggestion by viewModel.suggestion.collectAsStateWithLifecycle()
+    val readinessScore by viewModel.readinessScore.collectAsStateWithLifecycle()
     
     val format = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
 
@@ -89,9 +89,9 @@ fun ExerciseHistoryScreen(
             // Progression Suggestion Section
             item {
                 suggestion?.let { sug ->
-                    val isAiEnabled by viewModel.isAiEnabledFlow.collectAsState(initial = false)
-                    val aiExplanation by viewModel.aiExplanation.collectAsState()
-                    val isAiLoading by viewModel.isAiLoading.collectAsState()
+                    val isAiEnabled by viewModel.isAiEnabledFlow.collectAsStateWithLifecycle(initialValue = false)
+                    val aiExplanation by viewModel.aiExplanation.collectAsStateWithLifecycle()
+                    val isAiLoading by viewModel.isAiLoading.collectAsStateWithLifecycle()
 
                     Card(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
@@ -170,7 +170,7 @@ fun ExerciseHistoryScreen(
                                 Text("Set ${log.setNumber}: ${log.actualReps ?: log.targetReps}/${log.targetReps} reps @ ${log.actualWeight ?: log.targetWeight} ${log.weightUnit}  RPE: ${log.rpe ?: "N/A"}$status", style = MaterialTheme.typography.bodyMedium, color = textColor)
                                 
                                 // Estimated 1RM
-                                val ex = viewModel.exercise.collectAsState().value
+                                val ex = viewModel.exercise.collectAsStateWithLifecycle().value
                                 if (ex?.movementType == "compound" && !log.isSkipped && log.completed && log.actualWeight != null && log.actualWeight > 0 && log.actualReps != null) {
                                     val estimated1RM = log.actualWeight * (1f + log.actualReps / 30f)
                                     Text("Est. 1RM: ${String.format("%.1f", estimated1RM)} ${log.weightUnit}", style = MaterialTheme.typography.bodySmall, color = VividViolet)

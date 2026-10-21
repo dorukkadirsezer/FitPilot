@@ -9,7 +9,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,7 +38,7 @@ fun WorkoutDetailScreen(
     onNavigateBack: () -> Unit,
     viewModel: WorkoutDetailViewModel = hiltViewModel()
 ) {
-    val detail by viewModel.detail.collectAsState()
+    val detail by viewModel.detail.collectAsStateWithLifecycle()
 
     val format = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
 
@@ -131,10 +131,10 @@ fun WorkoutDetailScreen(
                         }
                     }
 
-                    val isAiEnabled by viewModel.isAiEnabled.collectAsState()
-                    val aiSummary by viewModel.aiSummary.collectAsState()
-                    val isGenerating by viewModel.isGeneratingSummary.collectAsState()
-                    val exportStatus by viewModel.exportStatus.collectAsState()
+                    val isAiEnabled by viewModel.isAiEnabled.collectAsStateWithLifecycle()
+                    val aiSummary by viewModel.aiSummary.collectAsStateWithLifecycle()
+                    val isGenerating by viewModel.isGeneratingSummary.collectAsStateWithLifecycle()
+                    val exportStatus by viewModel.exportStatus.collectAsStateWithLifecycle()
                     val snackbarHostState = androidx.compose.runtime.remember { SnackbarHostState() }
 
                     androidx.compose.runtime.LaunchedEffect(exportStatus) {

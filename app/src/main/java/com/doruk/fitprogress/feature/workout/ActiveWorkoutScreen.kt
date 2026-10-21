@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,9 +41,9 @@ fun ActiveWorkoutScreen(
     onNavigateBack: () -> Unit,
     viewModel: ActiveWorkoutViewModel = hiltViewModel()
 ) {
-    val session by viewModel.workoutSession.collectAsState()
-    val timerState by viewModel.restTimerState.collectAsState()
-    val errorMessage by viewModel.errorMessage.collectAsState()
+    val session by viewModel.workoutSession.collectAsStateWithLifecycle()
+    val timerState by viewModel.restTimerState.collectAsStateWithLifecycle()
+    val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
     var showFinishDialog by remember { mutableStateOf(false) }
     var showSettingsDialog by remember { mutableStateOf(false) }
 
@@ -59,8 +60,8 @@ fun ActiveWorkoutScreen(
         return
     }
 
-    val showWorkoutCompleteDialog by viewModel.showWorkoutCompleteDialog.collectAsState()
-    val aiSummary by viewModel.aiWorkoutSummary.collectAsState()
+    val showWorkoutCompleteDialog by viewModel.showWorkoutCompleteDialog.collectAsStateWithLifecycle()
+    val aiSummary by viewModel.aiWorkoutSummary.collectAsStateWithLifecycle()
 
     if (showWorkoutCompleteDialog) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -273,7 +274,7 @@ fun ActiveWorkoutScreen(
         )
     }
     
-    val cardioRec by viewModel.cardioRecommendation.collectAsState()
+    val cardioRec by viewModel.cardioRecommendation.collectAsStateWithLifecycle()
     
     LaunchedEffect(cardioRec) {
         if (cardioRec != null && cardioRec?.recommendedCardio == null) {
@@ -844,10 +845,10 @@ fun TimerSettingsDialog(
     viewModel: ActiveWorkoutViewModel,
     onDismiss: () -> Unit
 ) {
-    val timerSoundEnabled by viewModel.timerSoundEnabled.collectAsState()
-    val timerWarningEnabled by viewModel.timerWarningEnabled.collectAsState()
-    val timerFinishedEnabled by viewModel.timerFinishedEnabled.collectAsState()
-    val timerVibrationEnabled by viewModel.timerVibrationEnabled.collectAsState()
+    val timerSoundEnabled by viewModel.timerSoundEnabled.collectAsStateWithLifecycle()
+    val timerWarningEnabled by viewModel.timerWarningEnabled.collectAsStateWithLifecycle()
+    val timerFinishedEnabled by viewModel.timerFinishedEnabled.collectAsStateWithLifecycle()
+    val timerVibrationEnabled by viewModel.timerVibrationEnabled.collectAsStateWithLifecycle()
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -872,7 +873,7 @@ fun TimerSettingsDialog(
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(stringResource(com.doruk.fitprogress.R.string.sound_style), color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
-                val timerSoundStyle by viewModel.timerSoundStyle.collectAsState()
+                val timerSoundStyle by viewModel.timerSoundStyle.collectAsStateWithLifecycle()
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                     val styles = listOf(
                         com.doruk.fitprogress.core.domain.model.TimerSoundStyle.SOFT_BEEP to "Soft Beep",

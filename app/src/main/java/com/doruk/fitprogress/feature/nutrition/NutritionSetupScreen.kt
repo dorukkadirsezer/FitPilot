@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -20,7 +21,7 @@ fun NutritionSetupScreen(
     onNavigateUp: () -> Unit,
     viewModel: NutritionViewModel = hiltViewModel()
 ) {
-    val state by viewModel.uiState.collectAsState()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
     
     var cals by remember(state.nutritionDay) { mutableStateOf(state.nutritionDay?.targetCalories?.toString() ?: "2500") }
     var pro by remember(state.nutritionDay) { mutableStateOf(state.nutritionDay?.targetProtein?.toString() ?: "150") }
