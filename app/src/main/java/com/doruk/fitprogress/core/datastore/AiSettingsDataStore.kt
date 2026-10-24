@@ -6,6 +6,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
@@ -13,6 +14,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
+import java.io.IOException
+import java.security.GeneralSecurityException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -25,31 +28,54 @@ class AiSettingsDataStore @Inject constructor(
     companion object {
         val IS_AI_ENABLED = booleanPreferencesKey("is_ai_enabled")
         val SAVE_AI_LOGS = booleanPreferencesKey("save_ai_logs")
+        private const val SECURE_PREFS_FILE = "ai_secure_prefs"
         private const val GEMINI_API_KEY_PREF = "gemini_api_key_secure"
     }
 
-    private val masterKey = MasterKey.Builder(context)
-        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-        .build()
+    private val sharedPreferences: SharedPreferences by lazy {
+        createSecurePrefsOrRecover()
+    }
 
-    private val sharedPreferences: SharedPreferences = EncryptedSharedPreferences.create(
-        context,
-        "ai_secure_prefs",
-        masterKey,
-        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-    )
+    private val _geminiApiKeyFlow: MutableStateFlow<String?> by lazy {
+        MutableStateFlow(
+            runCatching { sharedPreferences.getString(GEMINI_API_KEY_PREF, null) }.getOrNull()
+        )
+    }
 
-    private val _geminiApiKeyFlow = MutableStateFlow<String?>(
-        sharedPreferences.getString(GEMINI_API_KEY_PREF, null)
-    )
+    private fun createSecurePrefsOrRecover(): SharedPreferences {
+        fun buildEncryptedPrefs(): SharedPreferences {
+            val masterKey = MasterKey.Builder(context)
+                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                .build()
+            return EncryptedSharedPreferences.create(
+                context,
+                SECURE_PREFS_FILE,
+                masterKey,
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            )
+        }
+
+        return try {
+            buildEncryptedPrefs()
+        } catch (e: GeneralSecurityException) {
+            // H1 Recovery: If Keystore master key was invalidated/restored on a new device,
+            // clear corrupted encrypted prefs file and recreate cleanly instead of crashing at startup.
+            runCatching { context.deleteSharedPreferences(SECURE_PREFS_FILE) }
+            buildEncryptedPrefs()
+        } catch (e: IOException) {
+            runCatching { context.deleteSharedPreferences(SECURE_PREFS_FILE) }
+            buildEncryptedPrefs()
+        }
+    }
 
     val isAiEnabledFlow: Flow<Boolean> = context.dataStore.data
         .map { preferences ->
             preferences[IS_AI_ENABLED] ?: false
         }
 
-    val geminiApiKeyFlow: Flow<String?> = _geminiApiKeyFlow
+    val geminiApiKeyFlow: Flow<String?>
+        get() = _geminiApiKeyFlow
 
     val saveAiLogsFlow: Flow<Boolean> = context.dataStore.data
         .map { preferences ->
@@ -63,16 +89,18 @@ class AiSettingsDataStore @Inject constructor(
     }
 
     suspend fun setGeminiApiKey(key: String?) {
-        if (key == null) {
+        val trimmed = key?.trim()
+        if (trimmed.isNullOrBlank()) {
             sharedPreferences.edit().remove(GEMINI_API_KEY_PREF).apply()
+            _geminiApiKeyFlow.value = null
         } else {
-            sharedPreferences.edit().putString(GEMINI_API_KEY_PREF, key).apply()
+            sharedPreferences.edit().putString(GEMINI_API_KEY_PREF, trimmed).apply()
+            _geminiApiKeyFlow.value = trimmed
         }
-        _geminiApiKeyFlow.value = key
-        
-        // Remove from old datastore if it existed
+
+        // Remove legacy plain key if it ever existed; do NOT override user's explicit IS_AI_ENABLED consent toggle (H2)
         context.dataStore.edit { preferences ->
-            val oldKey = androidx.datastore.preferences.core.stringPreferencesKey("gemini_api_key")
+            val oldKey = stringPreferencesKey("gemini_api_key")
             preferences.remove(oldKey)
         }
     }

@@ -155,6 +155,9 @@ fun DashboardScreen(
                 // 2. AI Coach Program Sync Hub Card (Zero-Shadow, 16.dp radius, 12.dp buttons)
                 item {
                     AiCoachSyncHubCard(
+                        isSyncing = uiState.isSyncingAiPlan,
+                        coachRationale = uiState.aiCoachRationale,
+                        onSyncWithGeminiClick = { viewModel.syncWithGeminiCoach() },
                         onImportClick = { viewModel.importCoachPlan() },
                         onExportClick = { viewModel.exportProgram() }
                     )
@@ -248,6 +251,9 @@ fun DashboardScreen(
 
 @Composable
 private fun AiCoachSyncHubCard(
+    isSyncing: Boolean,
+    coachRationale: String?,
+    onSyncWithGeminiClick: () -> Unit,
     onImportClick: () -> Unit,
     onExportClick: () -> Unit
 ) {
@@ -295,46 +301,115 @@ private fun AiCoachSyncHubCard(
                 }
             }
             Spacer(modifier = Modifier.width(8.dp))
-            StatusPillBadge(text = stringResource(R.string.status_ready), type = BadgeType.AI)
+            StatusPillBadge(
+                text = if (isSyncing) stringResource(R.string.status_syncing) else stringResource(R.string.status_ready),
+                type = if (isSyncing) BadgeType.INFO else BadgeType.AI
+            )
+        }
+
+        if (!coachRationale.isNullOrBlank()) {
+            Spacer(modifier = Modifier.height(10.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(ElectricCobalt.copy(alpha = 0.08f))
+                    .border(1.dp, ElectricCobalt.copy(alpha = 0.25f), RoundedCornerShape(10.dp))
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
+            ) {
+                Text(
+                    text = coachRationale,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(14.dp))
+
+        // Primary Autonomous Gemini API Sync Button
+        Button(
+            onClick = onSyncWithGeminiClick,
+            enabled = !isSyncing,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(46.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = ElectricCobalt,
+                contentColor = Color.White,
+                disabledContainerColor = ElectricCobalt.copy(alpha = 0.55f),
+                disabledContentColor = Color.White.copy(alpha = 0.9f)
+            ),
+            elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+            contentPadding = PaddingValues(horizontal = 14.dp)
+        ) {
+            if (isSyncing) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(16.dp),
+                    strokeWidth = 2.dp,
+                    color = Color.White
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = stringResource(R.string.syncing_gemini_coach),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Default.AutoAwesome,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = stringResource(R.string.sync_with_gemini_coach),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Button(
+            OutlinedButton(
                 onClick = onImportClick,
+                enabled = !isSyncing,
                 modifier = Modifier
                     .weight(1f)
-                    .height(44.dp),
+                    .height(42.dp),
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
                 contentPadding = PaddingValues(horizontal = 12.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.ContentPaste,
                     contentDescription = null,
-                    modifier = Modifier.size(16.dp)
+                    modifier = Modifier.size(16.dp),
+                    tint = ElectricCobalt
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
                     text = stringResource(R.string.import_plan),
                     style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.SemiBold
                 )
             }
 
             OutlinedButton(
                 onClick = onExportClick,
+                enabled = !isSyncing,
                 modifier = Modifier
                     .weight(1f)
-                    .height(44.dp),
+                    .height(42.dp),
                 shape = RoundedCornerShape(12.dp),
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                 colors = ButtonDefaults.outlinedButtonColors(

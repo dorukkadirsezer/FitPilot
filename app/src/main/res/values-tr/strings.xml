@@ -355,4 +355,10 @@
     <string name="logs_count_format">%1$d KAYIT</string>
     <string name="status_configured">YAPILANDIRILDI</string>
     <string name="status_empty">BOŞ</string>
+    <string name="sync_with_gemini_coach">Gemini AI Koç ile Senkronize Et</string>
+    <string name="syncing_gemini_coach">Gemini Makrosiklus Üretiyor...</string>
+    <string name="status_syncing">SENKRONİZE EDİLİYOR</string>
+    <string name="ai_sync_missing_key">Gemini API anahtarı bulunamadı. Lütfen Ayarlar ekranından API anahtarınızı girin.</string>
+    <string name="ai_sync_disabled_error">AI özellikleri kapalı. Lütfen Ayarlar ekranından AI özelliklerini etkinleştirin.</string>
+    <string name="ai_sync_success_format">Gemini AI Koç %1$d antrenman günü ve %2$d egzersiz güncelledi!</string>
 </resources>

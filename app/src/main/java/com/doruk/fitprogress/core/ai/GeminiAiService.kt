@@ -8,18 +8,24 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 /**
- * Implementation of AiService using raw HTTP to Google Gemini REST API.
- * This is for development MVP ONLY. 
- * Production direction: Firebase AI Logic or a secure backend proxy.
+ * Implementation of AiService using HTTPS to Google Gemini REST API.
+ * Uses active `gemini-2.5-flash` model and passes the API key via the
+ * `x-goog-api-key` header (never in the URL query string).
  */
 class GeminiAiService : AiService {
 
+    companion object {
+        private const val GEMINI_ENDPOINT =
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
+    }
+
     private suspend fun callGeminiApi(prompt: String, apiKey: String): Result<String> = withContext(Dispatchers.IO) {
         try {
-            val url = URL("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=\$apiKey")
+            val url = URL(GEMINI_ENDPOINT)
             val connection = url.openConnection() as HttpURLConnection
             connection.requestMethod = "POST"
             connection.setRequestProperty("Content-Type", "application/json")
+            connection.setRequestProperty("x-goog-api-key", apiKey.trim())
             connection.connectTimeout = 15000 // 15 seconds
             connection.readTimeout = 15000 // 15 seconds
             connection.doOutput = true
@@ -64,11 +70,11 @@ class GeminiAiService : AiService {
                 } catch (e: Exception) {
                     "Failed to read error stream"
                 }
-                
-                if (responseCode == 400 && errorResponse.contains("API key not valid")) {
+
+                if ((responseCode == 400 || responseCode == 403) && errorResponse.contains("API key", ignoreCase = true)) {
                     Result.failure(Exception("Invalid API Key. Please check your AI Settings."))
                 } else {
-                    Result.failure(Exception("API Error (\$responseCode): \$errorResponse"))
+                    Result.failure(Exception("API Error ($responseCode)"))
                 }
             }
         } catch (e: java.net.SocketTimeoutException) {
@@ -76,7 +82,7 @@ class GeminiAiService : AiService {
         } catch (e: java.net.UnknownHostException) {
             Result.failure(Exception("No internet connection or DNS error."))
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception("Request failed: ${e.javaClass.simpleName}"))
         }
     }
 
@@ -98,12 +104,11 @@ class GeminiAiService : AiService {
             ]
             
             Food text to parse:
-            \$text
+            $text
         """.trimIndent()
 
         val result = callGeminiApi(prompt, apiKey)
         return result.mapCatching { responseText ->
-            // Strip markdown code fences if they exist
             var cleanedText = responseText.trim()
             if (cleanedText.startsWith("```json")) {
                 cleanedText = cleanedText.removePrefix("```json")
@@ -145,11 +150,11 @@ class GeminiAiService : AiService {
             - Next focus: ...
             
             Workout Data:
-            Day: \${input.dayName}
-            Exercises: \${input.totalExercises}
-            Completed Sets: \${input.completedSets}
-            Skipped Sets: \${input.skippedSets}
-            Notes: \${input.notes}
+            Day: ${input.dayName}
+            Exercises: ${input.totalExercises}
+            Completed Sets: ${input.completedSets}
+            Skipped Sets: ${input.skippedSets}
+            Notes: ${input.notes}
         """.trimIndent()
 
         return callGeminiApi(prompt, apiKey)
@@ -160,10 +165,10 @@ class GeminiAiService : AiService {
             Explain the following deterministic progression calculation in 1-2 friendly, conversational sentences.
             Do NOT calculate a new suggestion. Only explain this one. Do not provide medical advice.
             
-            Exercise: \${input.exerciseName}
-            Suggestion: \${input.suggestion}
-            Reasoning: \${input.reasoning}
-            History: \${input.history.joinToString("; ")}
+            Exercise: ${input.exerciseName}
+            Suggestion: ${input.suggestion}
+            Reasoning: ${input.reasoning}
+            History: ${input.history.joinToString("; ")}
         """.trimIndent()
 
         return callGeminiApi(prompt, apiKey)
@@ -174,9 +179,9 @@ class GeminiAiService : AiService {
             Provide a concise weekly review based on the following local analytics. Use bullet points.
             Do not provide medical or nutrition advice. Keep wording neutral and focused on consistency.
             
-            Workout Consistency: \${input.workoutConsistency}
-            Nutrition Consistency: \${input.nutritionConsistency}
-            Body Trends: \${input.bodyTrends}
+            Workout Consistency: ${input.workoutConsistency}
+            Nutrition Consistency: ${input.nutritionConsistency}
+            Body Trends: ${input.bodyTrends}
         """.trimIndent()
 
         return callGeminiApi(prompt, apiKey)

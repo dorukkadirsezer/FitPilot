@@ -67,6 +67,8 @@ dependencies {
   androidTestImplementation(composeBom)
 
   implementation(libs.kotlinx.serialization.json)
+  implementation(platform(libs.ktor.bom))
+  implementation(libs.google.generativeai)
 
   // Core Android dependencies
   implementation(libs.androidx.core.ktx)

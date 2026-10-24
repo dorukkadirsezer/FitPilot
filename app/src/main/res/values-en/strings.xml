@@ -341,4 +341,10 @@
     <string name="logs_count_format">%1$d LOGS</string>
     <string name="status_configured">CONFIGURED</string>
     <string name="status_empty">EMPTY</string>
+    <string name="sync_with_gemini_coach">Sync with Gemini AI Coach</string>
+    <string name="syncing_gemini_coach">Generating Gemini Macrocycle...</string>
+    <string name="status_syncing">SYNCING</string>
+    <string name="ai_sync_missing_key">Gemini API key is missing. Please configure your API key in Settings.</string>
+    <string name="ai_sync_disabled_error">AI features are disabled. Please enable AI features in Settings.</string>
+    <string name="ai_sync_success_format">Gemini AI Coach updated %1$d workout days and %2$d exercises!</string>
 </resources>

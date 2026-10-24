@@ -1,19 +1,19 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-   Sample data extraction rules file; uncomment and customize as necessary.
-   See https://developer.android.com/about/versions/12/backup-restore#xml-changes
-   for details.
--->
+<?xml version="1.0" encoding="utf-8"?>
 <data-extraction-rules>
-    <cloud-backup>
-        <!-- TODO: Use <include> and <exclude> to control what is backed up.
-        <include .../>
-        <exclude .../>
-        -->
+    <cloud-backup disableIfNoEncryptionCapabilities="true">
+        <!-- Exclude device-bound Android Keystore encrypted preferences to prevent restore crashes (H1) -->
+        <exclude domain="sharedpref" path="ai_secure_prefs.xml" />
+
+        <!-- Exclude unencrypted Room health/fitness database files from cloud backup -->
+        <exclude domain="database" path="gymflow_database" />
+        <exclude domain="database" path="gymflow_database-wal" />
+        <exclude domain="database" path="gymflow_database-shm" />
     </cloud-backup>
-    <!--
     <device-transfer>
-        <include .../>
-        <exclude .../>
+        <!-- Exclude device-bound Keystore encrypted preferences during device-to-device transfer (H1) -->
+        <exclude domain="sharedpref" path="ai_secure_prefs.xml" />
+        <exclude domain="database" path="gymflow_database" />
+        <exclude domain="database" path="gymflow_database-wal" />
+        <exclude domain="database" path="gymflow_database-shm" />
     </device-transfer>
-    -->
 </data-extraction-rules>
