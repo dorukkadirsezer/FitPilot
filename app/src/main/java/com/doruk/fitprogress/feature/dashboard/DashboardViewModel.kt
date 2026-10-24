@@ -161,10 +161,15 @@ class DashboardViewModel @Inject constructor(
                 }
 
                 is AiSyncResult.SchemaValidationError -> {
+                    val detailedError = if (!result.rawSnippet.isNullOrBlank() && !result.reason.contains(result.rawSnippet)) {
+                        "${result.reason} | İlk 100 krkt: [${result.rawSnippet.take(100)}]"
+                    } else {
+                        result.reason
+                    }
                     _uiState.update { state ->
                         state.copy(
                             isSyncingAiPlan = false,
-                            importError = result.reason
+                            importError = detailedError
                         )
                     }
                 }

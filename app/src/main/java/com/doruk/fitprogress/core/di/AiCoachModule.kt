@@ -11,7 +11,10 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.okhttp.OkHttp
 import kotlinx.serialization.json.Json
+import java.util.concurrent.TimeUnit
 import javax.inject.Qualifier
 import javax.inject.Singleton
 
@@ -42,7 +45,7 @@ abstract class AiCoachBindsModule {
 @InstallIn(SingletonComponent::class)
 object AiCoachModule {
 
-    private const val DEFAULT_GEMINI_MODEL = "gemini-2.5-flash"
+    const val DEFAULT_GEMINI_MODEL = "gemini-2.5-flash"
 
     @Provides
     @Singleton
@@ -77,5 +80,17 @@ object AiCoachModule {
                 text(systemPrompt)
             }
         )
+    }
+
+    @Provides
+    @Singleton
+    fun provideKtorHttpClient(): HttpClient = HttpClient(OkHttp) {
+        engine {
+            config {
+                connectTimeout(30, TimeUnit.SECONDS)
+                readTimeout(60, TimeUnit.SECONDS)
+                writeTimeout(30, TimeUnit.SECONDS)
+            }
+        }
     }
 }

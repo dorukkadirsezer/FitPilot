@@ -90,6 +90,8 @@ dependencies {
 
   implementation(libs.kotlinx.serialization.json)
   implementation(platform(libs.ktor.bom))
+  implementation(libs.ktor.client.core)
+  implementation(libs.ktor.client.okhttp)
   implementation(libs.google.generativeai)
 
   // Core Android dependencies
