@@ -1,7 +1,5 @@
 package com.doruk.fitprogress.feature.dashboard
 
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -9,12 +7,14 @@ import com.doruk.fitprogress.core.ai.AiCoachingRepository
 import com.doruk.fitprogress.core.database.dao.WorkoutDao
 import com.doruk.fitprogress.core.database.entity.WorkoutSessionEntity
 import com.doruk.fitprogress.core.database.entity.WorkoutTemplateEntity
+import com.doruk.fitprogress.core.datastore.AiSettingsDataStore
 import com.doruk.fitprogress.core.domain.model.AiSyncResult
 import com.doruk.fitprogress.core.domain.usecase.AnalyticsDashboardSummary
 import com.doruk.fitprogress.core.domain.usecase.CalculateAnalyticsUseCase
 import com.doruk.fitprogress.core.domain.usecase.ExportProgramToJsonUseCase
 import com.doruk.fitprogress.core.domain.usecase.ExportUserProgressionStatsUseCase
 import com.doruk.fitprogress.core.domain.usecase.SyncCoachPlanUseCase
+import com.doruk.fitprogress.core.util.ClipboardSecurityUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -38,6 +38,7 @@ class DashboardViewModel @Inject constructor(
     private val exportProgramToJsonUseCase: ExportProgramToJsonUseCase,
     private val exportUserProgressionStatsUseCase: ExportUserProgressionStatsUseCase,
     private val aiCoachingRepository: AiCoachingRepository,
+    private val aiSettingsDataStore: AiSettingsDataStore,
     @ApplicationContext private val appContext: Context
 ) : ViewModel() {
 
@@ -101,7 +102,7 @@ class DashboardViewModel @Inject constructor(
 
     /**
      * Option 2: Autonomous Native Gemini API Synchronization.
-     * Exports Room progression telemetry, prompts Gemini with `responseMimeType = "application/json"`,
+     * Exports anonymized Room progression telemetry, prompts Gemini with `responseMimeType = "application/json"`,
      * validates the returned macrocycle, and saves it atomically to Room.
      */
     fun syncWithGeminiCoach() {
@@ -113,7 +114,8 @@ class DashboardViewModel @Inject constructor(
                     isSyncingAiPlan = true,
                     importError = null,
                     importSuccessMessage = null,
-                    missingApiKeyPrompt = false
+                    missingApiKeyPrompt = false,
+                    showDataSharingConsentDialog = false
                 )
             }
 
@@ -135,6 +137,15 @@ class DashboardViewModel @Inject constructor(
                             isSyncingAiPlan = false,
                             missingApiKeyPrompt = true,
                             importError = "AI özellikleri kapalı. Lütfen Ayarlar ekranından AI özelliklerini etkinleştirin."
+                        )
+                    }
+                }
+
+                is AiSyncResult.DataSharingConsentRequired -> {
+                    _uiState.update { state ->
+                        state.copy(
+                            isSyncingAiPlan = false,
+                            showDataSharingConsentDialog = true
                         )
                     }
                 }
@@ -168,6 +179,18 @@ class DashboardViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    fun acceptDataSharingAndSync() {
+        viewModelScope.launch {
+            aiSettingsDataStore.setDataSharingAccepted(true)
+            _uiState.update { it.copy(showDataSharingConsentDialog = false) }
+            syncWithGeminiCoach()
+        }
+    }
+
+    fun dismissDataSharingConsentDialog() {
+        _uiState.update { it.copy(showDataSharingConsentDialog = false) }
     }
 
     fun importCoachPlan() {
@@ -214,9 +237,12 @@ class DashboardViewModel @Inject constructor(
             runCatching {
                 val telemetryJson = exportUserProgressionStatsUseCase.exportAsJsonString(maxRecentSessions = 10)
                 withContext(Dispatchers.Main) {
-                    val clipboard = appContext.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                    val clip = ClipData.newPlainText("FitPilot Progression Telemetry JSON", telemetryJson)
-                    clipboard.setPrimaryClip(clip)
+                    // M5: Mark copied progression telemetry JSON as sensitive
+                    ClipboardSecurityUtils.copySensitiveText(
+                        context = appContext,
+                        label = "FitPilot Progression Telemetry JSON",
+                        text = telemetryJson
+                    )
                 }
             }.onSuccess {
                 _uiState.update { state ->
@@ -226,7 +252,6 @@ class DashboardViewModel @Inject constructor(
                     )
                 }
             }.onFailure {
-                // Fallback to legacy template export
                 val fallbackResult = exportProgramToJsonUseCase()
                 if (fallbackResult.isSuccess) {
                     _uiState.update { state ->
@@ -252,6 +277,7 @@ data class DashboardUiState(
     val isLoading: Boolean = true,
     val isSyncingAiPlan: Boolean = false,
     val missingApiKeyPrompt: Boolean = false,
+    val showDataSharingConsentDialog: Boolean = false,
     val aiCoachRationale: String? = null,
     val templates: List<WorkoutTemplateEntity> = emptyList(),
     val suggestedTemplateId: String? = null,

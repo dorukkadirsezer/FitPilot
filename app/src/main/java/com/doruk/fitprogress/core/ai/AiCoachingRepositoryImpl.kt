@@ -100,6 +100,15 @@ class AiCoachingRepositoryImpl @Inject constructor(
             return@withContext AiSyncResult.AiDisabled
         }
 
+        // 1.b M4 Explicit Data Sharing Consent Check before transmitting workout telemetry to Gemini API
+        val hasAcceptedDataSharing = runCatching {
+            aiSettingsDataStore.hasAcceptedDataSharingFlow.firstOrNull() ?: false
+        }.getOrDefault(false)
+
+        if (!hasAcceptedDataSharing) {
+            return@withContext AiSyncResult.DataSharingConsentRequired
+        }
+
         // 2. Dynamically and securely resolve Gemini API Key from EncryptedSharedPreferences via AiSettingsDataStore
         val rawApiKey = runCatching {
             aiSettingsDataStore.geminiApiKeyFlow.firstOrNull()?.trim()
@@ -240,7 +249,7 @@ class AiCoachingRepositoryImpl @Inject constructor(
     }
 
     private suspend fun persistProgramPlanAtomically(plan: ProgramPlanDto) {
-        profileDataStore.setAthleteName(plan.athlete)
+        // M4 Privacy: Do not overwrite local athlete name with model output; only update bounded nutrition targets
         profileDataStore.setNutritionTargets(
             calories = plan.dailyNutritionTarget.calories,
             protein = plan.dailyNutritionTarget.proteinGrams,

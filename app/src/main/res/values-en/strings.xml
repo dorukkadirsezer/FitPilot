@@ -347,4 +347,7 @@
     <string name="ai_sync_missing_key">Gemini API key is missing. Please configure your API key in Settings.</string>
     <string name="ai_sync_disabled_error">AI features are disabled. Please enable AI features in Settings.</string>
     <string name="ai_sync_success_format">Gemini AI Coach updated %1$d workout days and %2$d exercises!</string>
+    <string name="ai_data_consent_title">AI Data Sharing Consent</string>
+    <string name="ai_data_consent_message">To generate your next macrocycle, your anonymized workout telemetry (working volume, average RPE, set adherence, and macro targets; excluding your personal name) will be sent to the Google Gemini API. Do you consent?</string>
+    <string name="ai_data_consent_accept">Consent &amp; Sync</string>
 </resources>

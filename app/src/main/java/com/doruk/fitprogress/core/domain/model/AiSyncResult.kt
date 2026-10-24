@@ -13,6 +13,8 @@ sealed interface AiSyncResult {
 
     data object AiDisabled : AiSyncResult
 
+    data object DataSharingConsentRequired : AiSyncResult
+
     data object MissingApiKey : AiSyncResult
 
     data class SchemaValidationError(

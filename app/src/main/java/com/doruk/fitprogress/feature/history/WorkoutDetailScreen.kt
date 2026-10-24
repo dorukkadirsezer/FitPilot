@@ -215,7 +215,6 @@ fun WorkoutDetailScreen(
                     ) {
                         OutlinedButton(
                             onClick = {
-                                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                                 val exportText = buildString {
                                     appendLine("Workout: ${detail.workoutName ?: "Session"} ($dateStr)")
                                     appendLine("Volume: ${detail.session.totalWorkingVolumeKg} kg | Duration: $durationStr | Avg RPE: ${detail.session.averageRpe ?: "-"}")
@@ -224,7 +223,11 @@ fun WorkoutDetailScreen(
                                         appendLine("- ${ex.exercise?.name ?: "Exercise"}: $workingCount working sets")
                                     }
                                 }
-                                clipboard.setPrimaryClip(ClipData.newPlainText("FitPilot Session Export", exportText))
+                                com.doruk.fitprogress.core.util.ClipboardSecurityUtils.copySensitiveText(
+                                    context = context,
+                                    label = "FitPilot Session Export",
+                                    text = exportText
+                                )
                                 Toast.makeText(context, exportToastMsg, Toast.LENGTH_SHORT).show()
                             },
                             modifier = Modifier

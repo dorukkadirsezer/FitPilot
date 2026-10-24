@@ -361,4 +361,7 @@
     <string name="ai_sync_missing_key">Gemini API anahtarı bulunamadı. Lütfen Ayarlar ekranından API anahtarınızı girin.</string>
     <string name="ai_sync_disabled_error">AI özellikleri kapalı. Lütfen Ayarlar ekranından AI özelliklerini etkinleştirin.</string>
     <string name="ai_sync_success_format">Gemini AI Koç %1$d antrenman günü ve %2$d egzersiz güncelledi!</string>
+    <string name="ai_data_consent_title">AI Veri Paylaşım Onayı</string>
+    <string name="ai_data_consent_message">Yeni makrosiklus oluşturulması için anonimleştirilmiş antrenman telemetriniz (çalışma hacmi, ortalama RPE, tamamlanan set oranları ve makro hedefleriniz; kişisel adınız hariç) Google Gemini API servisine gönderilecektir. Onaylıyor musunuz?</string>
+    <string name="ai_data_consent_accept">Onayla ve Senkronize Et</string>
 </resources>

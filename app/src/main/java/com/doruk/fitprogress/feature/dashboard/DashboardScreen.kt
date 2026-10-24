@@ -84,6 +84,42 @@ fun DashboardScreen(
         }
     }
 
+    if (uiState.showDataSharingConsentDialog) {
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissDataSharingConsentDialog() },
+            title = {
+                Text(
+                    text = stringResource(R.string.ai_data_consent_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    text = stringResource(R.string.ai_data_consent_message),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = { viewModel.acceptDataSharingAndSync() },
+                    colors = ButtonDefaults.buttonColors(containerColor = ElectricCobalt)
+                ) {
+                    Text(
+                        text = stringResource(R.string.ai_data_consent_accept),
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.dismissDataSharingConsentDialog() }) {
+                    Text(text = stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(

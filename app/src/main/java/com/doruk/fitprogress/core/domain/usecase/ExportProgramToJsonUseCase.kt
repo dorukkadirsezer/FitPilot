@@ -1,7 +1,5 @@
 package com.doruk.fitprogress.core.domain.usecase
 
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Context
 import com.doruk.fitprogress.core.database.dao.WorkoutDao
 import com.doruk.fitprogress.core.datastore.ProfileDataStore
@@ -9,14 +7,14 @@ import com.doruk.fitprogress.core.domain.model.ExerciseTargetDto
 import com.doruk.fitprogress.core.domain.model.NutritionTargetDto
 import com.doruk.fitprogress.core.domain.model.ProgramPlanDto
 import com.doruk.fitprogress.core.domain.model.WorkoutDayDto
+import com.doruk.fitprogress.core.util.ClipboardSecurityUtils
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
-
-import dagger.hilt.android.qualifiers.ApplicationContext
 
 class ExportProgramToJsonUseCase @Inject constructor(
     private val dao: WorkoutDao,
@@ -26,8 +24,8 @@ class ExportProgramToJsonUseCase @Inject constructor(
     suspend operator fun invoke(): Result<Unit> {
         val resultPair: Pair<Result<Unit>, String?> = withContext(Dispatchers.IO) {
             try {
-                // Fetch profile data
-                val athlete = profileDataStore.athleteNameFlow.firstOrNull() ?: "Unknown Athlete"
+                // M4 Privacy: Do not export personal athlete name (PII)
+                val anonymizedAthlete = "FitPilot_Athlete"
                 val calories = profileDataStore.targetCaloriesFlow.firstOrNull() ?: 2500
                 val protein = profileDataStore.targetProteinFlow.firstOrNull() ?: 150
                 val fat = profileDataStore.targetFatFlow.firstOrNull() ?: 80
@@ -63,7 +61,7 @@ class ExportProgramToJsonUseCase @Inject constructor(
                             targetLoad = tex.targetWeightMin,
                             targetRpe = tex.rpeMin,
                             restTimerSeconds = tex.restSeconds,
-                            notes = null // Note not currently mapped back
+                            notes = null
                         )
                     }
 
@@ -75,8 +73,8 @@ class ExportProgramToJsonUseCase @Inject constructor(
                 }
 
                 val plan = ProgramPlanDto(
-                    programVersion = "2.1",
-                    athlete = athlete,
+                    programVersion = "2.2",
+                    athlete = anonymizedAthlete,
                     dailyNutritionTarget = nutritionTarget,
                     workouts = workoutDays
                 )
@@ -94,9 +92,12 @@ class ExportProgramToJsonUseCase @Inject constructor(
 
         if (res.isSuccess && jsonStr != null) {
             withContext(Dispatchers.Main) {
-                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                val clip = ClipData.newPlainText("Program Plan JSON", jsonStr)
-                clipboard.setPrimaryClip(clip)
+                // M5: Mark copied JSON payload with EXTRA_IS_SENSITIVE
+                ClipboardSecurityUtils.copySensitiveText(
+                    context = context,
+                    label = "Program Plan JSON",
+                    text = jsonStr
+                )
             }
         }
 

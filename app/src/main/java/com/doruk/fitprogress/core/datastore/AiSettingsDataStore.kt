@@ -28,6 +28,7 @@ class AiSettingsDataStore @Inject constructor(
     companion object {
         val IS_AI_ENABLED = booleanPreferencesKey("is_ai_enabled")
         val SAVE_AI_LOGS = booleanPreferencesKey("save_ai_logs")
+        val HAS_ACCEPTED_AI_DATA_SHARING = booleanPreferencesKey("has_accepted_ai_data_sharing")
         private const val SECURE_PREFS_FILE = "ai_secure_prefs"
         private const val GEMINI_API_KEY_PREF = "gemini_api_key_secure"
     }
@@ -74,6 +75,11 @@ class AiSettingsDataStore @Inject constructor(
             preferences[IS_AI_ENABLED] ?: false
         }
 
+    val hasAcceptedDataSharingFlow: Flow<Boolean> = context.dataStore.data
+        .map { preferences ->
+            preferences[HAS_ACCEPTED_AI_DATA_SHARING] ?: false
+        }
+
     val geminiApiKeyFlow: Flow<String?>
         get() = _geminiApiKeyFlow
 
@@ -85,6 +91,18 @@ class AiSettingsDataStore @Inject constructor(
     suspend fun setAiEnabled(enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[IS_AI_ENABLED] = enabled
+            if (!enabled) {
+                preferences[HAS_ACCEPTED_AI_DATA_SHARING] = false
+            }
+        }
+    }
+
+    suspend fun setDataSharingAccepted(accepted: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[HAS_ACCEPTED_AI_DATA_SHARING] = accepted
+            if (accepted) {
+                preferences[IS_AI_ENABLED] = true
+            }
         }
     }
 

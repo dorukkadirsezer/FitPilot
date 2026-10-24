@@ -20,13 +20,35 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
     lint {
-        checkReleaseBuilds = false
-        abortOnError = false
+        checkReleaseBuilds = true
+        abortOnError = true
+        warningsAsErrors = false
+        fatal += setOf(
+            "AllowBackup",
+            "ExportedReceiver",
+            "ExportedService",
+            "ExportedContentProvider",
+            "SetJavaScriptEnabled",
+            "HardcodedDebugMode"
+        )
+        disable += setOf(
+            "NullSafeMutableLiveData",
+            "GradleDependency",
+            "NewerVersionAvailable",
+            "AndroidGradlePluginVersion",
+            "ObsoleteSdkInt",
+            "OldTargetApi",
+            "UnusedResources",
+            "MissingTranslation",
+            "ExtraTranslation",
+            "MonochromeLauncherIcon"
+        )
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

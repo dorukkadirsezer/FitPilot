@@ -38,7 +38,8 @@ class ExportUserProgressionStatsUseCase @Inject constructor(
         val fourteenDaysAgoMillis = nowMillis - TimeUnit.DAYS.toMillis(14)
         val thirtyDaysAgoMillis = nowMillis - TimeUnit.DAYS.toMillis(30)
 
-        val athleteName = profileDataStore.athleteNameFlow.firstOrNull()?.takeIf { it.isNotBlank() } ?: "FitPilot Athlete"
+        // M4 Privacy: Strip personal athlete name (PII) before external export or Gemini API transmission
+        val anonymizedAthleteTag = "FitPilot_Athlete"
         val targetCalories = profileDataStore.targetCaloriesFlow.firstOrNull() ?: 2500
         val targetProtein = profileDataStore.targetProteinFlow.firstOrNull() ?: 160
         val targetFat = profileDataStore.targetFatFlow.firstOrNull() ?: 75
@@ -169,7 +170,7 @@ class ExportUserProgressionStatsUseCase @Inject constructor(
 
         UserTelemetryPayloadDto(
             exportedAtIso = todayIso,
-            athleteName = athleteName,
+            athleteName = anonymizedAthleteTag,
             currentNutritionTargets = ValidatedNutritionTargetDto(
                 calories = targetCalories,
                 proteinGrams = targetProtein,
