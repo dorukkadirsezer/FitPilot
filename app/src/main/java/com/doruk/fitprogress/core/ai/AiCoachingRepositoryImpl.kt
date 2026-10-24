@@ -20,6 +20,7 @@ import com.doruk.fitprogress.core.domain.model.ValidatedWorkoutDayDto
 import com.doruk.fitprogress.core.domain.usecase.ExportUserProgressionStatsUseCase
 import com.google.ai.client.generativeai.type.GoogleGenerativeAIException
 import io.ktor.client.HttpClient
+import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -60,8 +61,17 @@ class AiCoachingRepositoryImpl @Inject constructor(
 ) : AiCoachingRepository {
 
     companion object {
-        private const val GEMINI_REST_URL =
-            "https://generativelanguage.googleapis.com/v1beta/models/${AiCoachModule.DEFAULT_GEMINI_MODEL}:generateContent"
+        private const val GEMINI_MODELS_LIST_URL =
+            "https://generativelanguage.googleapis.com/v1beta/models"
+
+        /**
+         * Builds the official Google Generative Language v1beta REST endpoint URL:
+         * `https://generativelanguage.googleapis.com/v1beta/models/$modelName:generateContent`
+         */
+        internal fun buildGenerateContentUrl(modelName: String = AiCoachModule.DEFAULT_GEMINI_MODEL): String {
+            val cleanModelName = modelName.removePrefix("models/").trim()
+            return "https://generativelanguage.googleapis.com/v1beta/models/$cleanModelName:generateContent"
+        }
 
         private val MARKDOWN_FENCE_REGEX = Regex("(?i)```(?:json)?|```")
 
@@ -294,8 +304,9 @@ class AiCoachingRepositoryImpl @Inject constructor(
 
     /**
      * Direct Ktor HTTPS fallback for Gemini v1beta generateContent.
-     * Sends the API key strictly in the `x-goog-api-key` header, enforces `responseMimeType = "application/json"`,
-     * and ignores thinking/metadata envelope fields that break the legacy 0.9.0 SDK serializer.
+     * Uses `https://generativelanguage.googleapis.com/v1beta/models/$modelName:generateContent`,
+     * sends the API key strictly in the `x-goog-api-key` header, enforces `responseMimeType = "application/json"`,
+     * falls back across supported stable models if HTTP 404 is returned, and includes `error.message` on failure.
      */
     private suspend fun callGeminiRestViaKtor(
         apiKey: String,
@@ -328,31 +339,69 @@ class AiCoachingRepositoryImpl @Inject constructor(
             })
         }.toString()
 
-        val httpResponse = ktorHttpClient.post(GEMINI_REST_URL) {
-            header("x-goog-api-key", apiKey)
-            contentType(ContentType.Application.Json)
-            setBody(requestBodyJson)
+        var lastStatusCode = 404
+        var lastResponseBody = ""
+
+        val candidateModels = AiCoachModule.FALLBACK_GEMINI_MODELS.toMutableList()
+
+        for (modelName in candidateModels) {
+            val endpointUrl = buildGenerateContentUrl(modelName)
+            val httpResponse = ktorHttpClient.post(endpointUrl) {
+                header("x-goog-api-key", apiKey)
+                contentType(ContentType.Application.Json)
+                setBody(requestBodyJson)
+            }
+
+            val responseBody = httpResponse.bodyAsText()
+            if (httpResponse.status.isSuccess()) {
+                return extractTextFromGenerateContentResponse(responseBody)
+            }
+
+            lastStatusCode = httpResponse.status.value
+            lastResponseBody = responseBody
+
+            // Only try the next fallback model if the current model name returned HTTP 404 (Not Found)
+            if (lastStatusCode != 404) {
+                break
+            }
         }
 
-        val responseBody = httpResponse.bodyAsText()
-
-        if (!httpResponse.status.isSuccess()) {
-            val statusCode = httpResponse.status.value
-            val isAuthOrQuota = statusCode == 400 || statusCode == 401 || statusCode == 403 || statusCode == 429 ||
-                responseBody.contains("API_KEY", ignoreCase = true) ||
-                responseBody.contains("API key", ignoreCase = true) ||
-                responseBody.contains("quota", ignoreCase = true)
-            val errSnippet = responseBody.replace(Regex("\\s+"), " ").take(100)
-            throw GeminiRestApiException(
-                userMessage = if (isAuthOrQuota) {
-                    "Gemini API anahtarı geçersiz veya kota sınırına ulaşıldı (HTTP $statusCode)."
-                } else {
-                    "Gemini HTTP $statusCode hatası: $errSnippet"
-                },
-                isAuthOrQuota = isAuthOrQuota
-            )
+        // If all static model aliases returned 404, query /v1beta/models dynamically once to find an active model for this API key
+        if (lastStatusCode == 404) {
+            val discoveredModel = discoverAvailableFlashModel(apiKey)
+            if (!discoveredModel.isNullOrBlank()) {
+                val endpointUrl = buildGenerateContentUrl(discoveredModel)
+                val httpResponse = ktorHttpClient.post(endpointUrl) {
+                    header("x-goog-api-key", apiKey)
+                    contentType(ContentType.Application.Json)
+                    setBody(requestBodyJson)
+                }
+                val responseBody = httpResponse.bodyAsText()
+                if (httpResponse.status.isSuccess()) {
+                    return extractTextFromGenerateContentResponse(responseBody)
+                }
+                lastStatusCode = httpResponse.status.value
+                lastResponseBody = responseBody
+            }
         }
 
+        val errorMessage = extractApiErrorMessage(lastResponseBody)
+        val isAuthOrQuota = lastStatusCode == 401 || lastStatusCode == 403 || lastStatusCode == 429 ||
+            lastResponseBody.contains("API_KEY", ignoreCase = true) ||
+            lastResponseBody.contains("API key not valid", ignoreCase = true) ||
+            lastResponseBody.contains("quota", ignoreCase = true)
+
+        throw GeminiRestApiException(
+            userMessage = if (isAuthOrQuota) {
+                "Gemini API anahtarı geçersiz veya kota sınırına ulaşıldı (HTTP $lastStatusCode): $errorMessage"
+            } else {
+                "Gemini HTTP $lastStatusCode hatası: $errorMessage"
+            },
+            isAuthOrQuota = isAuthOrQuota
+        )
+    }
+
+    private fun extractTextFromGenerateContentResponse(responseBody: String): String {
         val rootObj = json.parseToJsonElement(responseBody).jsonObject
         val candidates = rootObj["candidates"]?.jsonArray
         if (candidates.isNullOrEmpty()) {
@@ -367,7 +416,6 @@ class AiCoachingRepositoryImpl @Inject constructor(
             throw IllegalArgumentException("Model içerik parçası (parts) üretmedi. Ham yanıt: $snippet")
         }
 
-        // Select the non-thought text part (since gemini-2.5-flash may include a thought part before the JSON part)
         val nonThoughtText = parts
             .map { it.jsonObject }
             .firstOrNull { partObj ->
@@ -380,6 +428,64 @@ class AiCoachingRepositoryImpl @Inject constructor(
             ?: parts.last().jsonObject["text"]?.jsonPrimitive?.content
             ?: responseBody
     }
+
+    /**
+     * Extracts `error.message` (and `error.status`) from the standard Google REST API error JSON payload,
+     * falling back to a single-line snippet of the raw error body if JSON parsing fails.
+     */
+    private fun extractApiErrorMessage(responseBody: String): String {
+        val parsedErrorMessage = runCatching {
+            val rootObj = json.parseToJsonElement(responseBody).jsonObject
+            val errorObj = rootObj["error"]?.jsonObject
+            val message = errorObj?.get("message")?.jsonPrimitive?.content?.trim()
+            val status = errorObj?.get("status")?.jsonPrimitive?.content?.trim()
+            if (!message.isNullOrBlank()) {
+                if (!status.isNullOrBlank()) "$message ($status)" else message
+            } else {
+                null
+            }
+        }.getOrNull()
+
+        return (parsedErrorMessage ?: responseBody.replace(Regex("\\s+"), " ").trim())
+            .take(180)
+            .ifBlank { "Sunucu hata detayı döndürmedi" }
+    }
+
+    /**
+     * Queries `GET https://generativelanguage.googleapis.com/v1beta/models` if static model names return 404,
+     * selecting the best available model that supports `generateContent`.
+     */
+    private suspend fun discoverAvailableFlashModel(apiKey: String): String? = runCatching {
+        val response = ktorHttpClient.get(GEMINI_MODELS_LIST_URL) {
+            header("x-goog-api-key", apiKey)
+        }
+        if (!response.status.isSuccess()) return@runCatching null
+
+        val rootObj = json.parseToJsonElement(response.bodyAsText()).jsonObject
+        val modelsArray = rootObj["models"]?.jsonArray ?: return@runCatching null
+
+        val generateContentModels = modelsArray.mapNotNull { element ->
+            val modelObj = element.jsonObject
+            val name = modelObj["name"]?.jsonPrimitive?.content?.removePrefix("models/") ?: return@mapNotNull null
+            val methods = modelObj["supportedGenerationMethods"]?.jsonArray
+                ?.mapNotNull { it.jsonPrimitive.content }
+                .orEmpty()
+            if ("generateContent" in methods &&
+                !name.contains("tts", ignoreCase = true) &&
+                !name.contains("image", ignoreCase = true) &&
+                !name.contains("embedding", ignoreCase = true) &&
+                !name.contains("aqa", ignoreCase = true) &&
+                !name.contains("vision", ignoreCase = true)
+            ) {
+                name
+            } else {
+                null
+            }
+        }
+
+        generateContentModels.firstOrNull { it.contains("flash", ignoreCase = true) }
+            ?: generateContentModels.firstOrNull { it.contains("gemini", ignoreCase = true) }
+    }.getOrNull()
 
     /**
      * Multi-stage Markdown & prose sanitizer.

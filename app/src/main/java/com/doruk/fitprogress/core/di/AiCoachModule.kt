@@ -45,7 +45,16 @@ abstract class AiCoachBindsModule {
 @InstallIn(SingletonComponent::class)
 object AiCoachModule {
 
-    const val DEFAULT_GEMINI_MODEL = "gemini-2.5-flash"
+    const val DEFAULT_GEMINI_MODEL = "gemini-2.0-flash"
+
+    val FALLBACK_GEMINI_MODELS = listOf(
+        DEFAULT_GEMINI_MODEL,
+        "gemini-1.5-flash",
+        "gemini-1.5-flash-latest",
+        "gemini-2.0-flash-001",
+        "gemini-2.5-flash",
+        "gemini-2.5-flash-lite"
+    )
 
     @Provides
     @Singleton

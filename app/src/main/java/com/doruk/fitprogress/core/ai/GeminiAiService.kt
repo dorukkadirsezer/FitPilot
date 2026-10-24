@@ -16,7 +16,7 @@ class GeminiAiService : AiService {
 
     companion object {
         private const val GEMINI_ENDPOINT =
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
     }
 
     private suspend fun callGeminiApi(prompt: String, apiKey: String): Result<String> = withContext(Dispatchers.IO) {
