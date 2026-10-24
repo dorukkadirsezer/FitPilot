@@ -1,37 +1,44 @@
 package com.doruk.fitprogress.feature.dashboard
 
-import androidx.compose.foundation.clickable
+import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.ContentPaste
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Insights
+import androidx.compose.material.icons.filled.MonitorWeight
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.doruk.fitprogress.core.database.entity.WorkoutTemplateEntity
-import com.doruk.fitprogress.core.domain.usecase.AnalyticsDashboardSummary
-import com.doruk.fitprogress.core.ui.components.GradientHeaderCard
-import com.doruk.fitprogress.core.ui.components.MetricCard
-import com.doruk.fitprogress.core.ui.components.PrimaryActionButton
-import com.doruk.fitprogress.core.ui.components.StatusBadge
-import com.doruk.fitprogress.theme.ElectricCyan
-import com.doruk.fitprogress.theme.NeonGreen
-
-import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.doruk.fitprogress.R
+import com.doruk.fitprogress.core.database.entity.WorkoutTemplateEntity
+import com.doruk.fitprogress.core.ui.components.*
+import com.doruk.fitprogress.core.util.LocalizationUtils
+import com.doruk.fitprogress.theme.AthleticEmerald
+import com.doruk.fitprogress.theme.ElectricCobalt
+import com.doruk.fitprogress.theme.TelemetryAmber
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,90 +54,84 @@ fun DashboardScreen(
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val lifecycleOwner = LocalLifecycleOwner.current
-    val snackbarHostState = androidx.compose.runtime.remember { SnackbarHostState() }
+    val context = LocalContext.current
 
-    androidx.compose.runtime.LaunchedEffect(uiState.importError, uiState.importSuccessMessage, uiState.exportError, uiState.exportSuccessMessage) {
-        if (uiState.importError != null) {
-            snackbarHostState.showSnackbar(uiState.importError!!)
-            viewModel.clearImportMessages()
-        }
-        if (uiState.importSuccessMessage != null) {
-            snackbarHostState.showSnackbar(uiState.importSuccessMessage!!)
-            viewModel.clearImportMessages()
-        }
-        if (uiState.exportError != null) {
-            snackbarHostState.showSnackbar(uiState.exportError!!)
-            viewModel.clearImportMessages()
-        }
-        if (uiState.exportSuccessMessage != null) {
-            snackbarHostState.showSnackbar(uiState.exportSuccessMessage!!)
+    LaunchedEffect(
+        uiState.importSuccessMessage,
+        uiState.importError,
+        uiState.exportSuccessMessage,
+        uiState.exportError
+    ) {
+        val msg = uiState.importSuccessMessage
+            ?: uiState.importError
+            ?: uiState.exportSuccessMessage
+            ?: uiState.exportError
+        if (msg != null) {
+            Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
             viewModel.clearImportMessages()
         }
     }
 
-    androidx.compose.runtime.LaunchedEffect(uiState.importedSessionId) {
-        if (uiState.importedSessionId != null) {
-            val templates = uiState.templates
-            val templateId = templates.find { it.dayCode == "AI_COACH" }?.id ?: "AI_COACH"
-            // Start ActiveWorkout without going through coaching (which creates session).
-            // We just created it, so navigate there with recId to bypass session creation.
-            onNavigateToActiveWorkout("recId=${uiState.importedSessionId}")
+    LaunchedEffect(uiState.importedSessionId) {
+        val sessionId = uiState.importedSessionId
+        if (!sessionId.isNullOrBlank()) {
+            onNavigateToActiveWorkout(sessionId)
             viewModel.clearImportedSessionId()
-        }
-    }
-
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                viewModel.refresh()
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.app_name), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
+                title = {
+                    FitPilotBrandLockup(
+                        title = "FitPilot",
+                        badgeText = "BETA"
+                    )
+                },
                 actions = {
-                    IconButton(onClick = { viewModel.exportProgram() }) {
-                        Icon(Icons.Default.Share, contentDescription = "Export Program Data", tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    IconButton(onClick = onNavigateToAiSettings) {
-                        Icon(Icons.Default.Settings, contentDescription = "Settings", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    IconButton(
+                        onClick = onNavigateToAiSettings,
+                        modifier = Modifier
+                            .padding(end = 8.dp)
+                            .size(40.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.surface)
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp))
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = stringResource(R.string.smart_settings),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
             )
         },
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { viewModel.importCoachPlan() },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                icon = { Icon(Icons.Default.Download, contentDescription = null) },
-                text = { Text("Import Coach JSON") }
-            )
-        }
-    ) { padding ->
+        containerColor = MaterialTheme.colorScheme.background
+    ) { paddingValues ->
         if (uiState.isLoading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = ElectricCyan)
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
         } else {
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding)
+                    .padding(paddingValues)
                     .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
-                contentPadding = PaddingValues(bottom = 96.dp)
+                contentPadding = PaddingValues(top = 8.dp, bottom = 32.dp)
             ) {
+                // 1. Hero Header Card (Zero-Shadow + Hairline Border)
                 item {
                     GradientHeaderCard(
                         title = stringResource(R.string.ready_to_crush_it),
@@ -138,28 +139,88 @@ fun DashboardScreen(
                     )
                 }
 
+                // 2. AI Coach Program Sync Hub Card (Zero-Shadow, 16.dp radius, 12.dp buttons)
                 item {
-                    uiState.analyticsSummary?.let { summary ->
-                        DashboardSummaryCards(
-                            summary = summary,
-                            onNavigateToAnalytics = onNavigateToAnalytics,
-                            onNavigateToWorkoutHistory = onNavigateToWorkoutHistory,
-                            onNavigateToBodyMetrics = onNavigateToBodyMetrics,
-                            onNavigateToNutrition = onNavigateToNutrition
+                    AiCoachSyncHubCard(
+                        onImportClick = { viewModel.importCoachPlan() },
+                        onExportClick = { viewModel.exportProgram() }
+                    )
+                }
+
+                // 3. Nutrition Telemetry Capsule Card
+                item {
+                    DashboardNutritionTelemetryCard(
+                        uiState = uiState,
+                        onClick = onNavigateToNutrition
+                    )
+                }
+
+                // 4. Quick Telemetry Navigation Row (Analytics, Body Metrics, History)
+                item {
+                    val completedCount = uiState.analyticsSummary?.workoutSummary?.workoutsCompleted ?: 0
+                    val latestWeight = uiState.analyticsSummary?.bodySummary?.latestWeight
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        QuickNavTelemetryPillCard(
+                            title = stringResource(R.string.analytics),
+                            subtitle = stringResource(R.string.weekly_snapshot),
+                            icon = Icons.Default.Insights,
+                            accentColor = ElectricCobalt,
+                            modifier = Modifier.weight(1f),
+                            onClick = onNavigateToAnalytics
+                        )
+                        QuickNavTelemetryPillCard(
+                            title = stringResource(R.string.body),
+                            subtitle = if (latestWeight != null) "$latestWeight kg" else stringResource(R.string.view_trends),
+                            icon = Icons.Default.MonitorWeight,
+                            accentColor = AthleticEmerald,
+                            modifier = Modifier.weight(1f),
+                            onClick = onNavigateToBodyMetrics
+                        )
+                        QuickNavTelemetryPillCard(
+                            title = stringResource(R.string.history),
+                            subtitle = "$completedCount ${stringResource(R.string.completed)}",
+                            icon = Icons.Default.History,
+                            accentColor = TelemetryAmber,
+                            modifier = Modifier.weight(1f),
+                            onClick = onNavigateToWorkoutHistory
                         )
                     }
                 }
 
+                // 5. Select a Workout Section Header
                 item {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(stringResource(R.string.select_workout), style = MaterialTheme.typography.titleLarge)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(R.string.select_workout),
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            fontWeight = FontWeight.Bold
+                        )
+                        StatusPillBadge(
+                            text = "${uiState.templates.size} PLANS",
+                            type = BadgeType.INFO
+                        )
+                    }
                 }
 
-                items(uiState.templates) { template ->
-                    WorkoutTemplateCard(
+                // 6. Workout Template Cards
+                items(
+                    items = uiState.templates,
+                    key = { it.id }
+                ) { template ->
+                    DashboardTemplateCard(
                         template = template,
-                        onClick = { onTemplateClick(template.id) },
-                        onStartWorkout = { onNavigateToCoaching(template.id) }
+                        onCardClick = { onTemplateClick(template.id) },
+                        onStartClick = { onNavigateToCoaching(template.id) }
                     )
                 }
             }
@@ -168,98 +229,312 @@ fun DashboardScreen(
 }
 
 @Composable
-fun DashboardSummaryCards(
-    summary: AnalyticsDashboardSummary,
-    onNavigateToAnalytics: () -> Unit,
-    onNavigateToWorkoutHistory: () -> Unit,
-    onNavigateToBodyMetrics: () -> Unit,
-    onNavigateToNutrition: () -> Unit
+private fun AiCoachSyncHubCard(
+    onImportClick: () -> Unit,
+    onExportClick: () -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            MetricCard(
-                title = stringResource(R.string.recent_workouts),
-                modifier = Modifier.weight(1f).clickable { onNavigateToWorkoutHistory() }
+    StandardSurfaceCard(
+        borderColor = ElectricCobalt.copy(alpha = 0.35f),
+        containerColor = MaterialTheme.colorScheme.surface
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.weight(1f)
             ) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(ElectricCobalt.copy(alpha = 0.14f))
+                        .border(1.dp, ElectricCobalt.copy(alpha = 0.35f), RoundedCornerShape(10.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AutoAwesome,
+                        contentDescription = null,
+                        tint = ElectricCobalt,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+                Column {
+                    Text(
+                        text = "AI Coach Sync Hub",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "Bidirectional JSON Macrocycle & Progression Pipeline",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            StatusPillBadge(text = "READY", type = BadgeType.AI)
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Button(
+                onClick = onImportClick,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(44.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ContentPaste,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    "${summary.workoutSummary.workoutsCompleted} ${stringResource(R.string.completed)}",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.primary,
+                    text = "Import Plan",
+                    style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold
                 )
             }
-            MetricCard(
-                title = stringResource(R.string.analytics),
-                modifier = Modifier.weight(1f).clickable { onNavigateToAnalytics() }
+
+            OutlinedButton(
+                onClick = onExportClick,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(44.dp),
+                shape = RoundedCornerShape(12.dp),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                contentPadding = PaddingValues(horizontal = 12.dp)
             ) {
+                Icon(
+                    imageVector = Icons.Default.ContentCopy,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = ElectricCobalt
+                )
+                Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    stringResource(R.string.view_trends),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold
+                    text = "Export Stats",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold
                 )
             }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            MetricCard(
-                title = stringResource(R.string.body),
-                modifier = Modifier.weight(1f).clickable { onNavigateToBodyMetrics() }
+    }
+}
+
+@Composable
+private fun DashboardNutritionTelemetryCard(
+    uiState: DashboardUiState,
+    onClick: () -> Unit
+) {
+    val nutSummary = uiState.analyticsSummary?.nutritionSummary
+    val avgCals = nutSummary?.averageDailyCalories?.toInt() ?: 0
+    val avgProtein = nutSummary?.averageDailyProtein?.toInt() ?: 0
+    val daysLogged = nutSummary?.daysLogged ?: 0
+
+    StandardSurfaceCard(
+        onClick = onClick,
+        borderColor = MaterialTheme.colorScheme.outlineVariant
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                Icon(
+                    imageVector = Icons.Default.Restaurant,
+                    contentDescription = null,
+                    tint = AthleticEmerald,
+                    modifier = Modifier.size(18.dp)
+                )
                 Text(
-                    summary.bodySummary.latestWeight?.let { "${it} kg" } ?: stringResource(R.string.no_data),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.tertiary,
-                    fontWeight = FontWeight.Bold
+                    text = stringResource(R.string.nutrition_tracking),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
+
+            StatusPillBadge(
+                text = "$avgCals kcal avg",
+                type = BadgeType.SUCCESS
+            )
         }
-        
-        MetricCard(
-            title = stringResource(R.string.nutrition_tracking),
-            modifier = Modifier.clickable { onNavigateToNutrition() }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        val calProgress = (avgCals.toFloat() / 2500f).coerceIn(0f, 1f)
+        LinearProgressIndicator(
+            progress = { calProgress },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(8.dp)
+                .clip(RoundedCornerShape(percent = 50)),
+            color = ElectricCobalt,
+            trackColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                "Avg ${summary.nutritionSummary.averageDailyCalories.toInt()} kcal / ${summary.nutritionSummary.averageDailyProtein.toInt()}g protein",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface,
+                text = "${stringResource(R.string.avg_protein)}: ${avgProtein}g",
+                style = MaterialTheme.typography.labelMedium,
+                color = AthleticEmerald,
                 fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = "${stringResource(R.string.days_logged)}: $daysLogged/7",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
 }
 
 @Composable
-fun WorkoutTemplateCard(
-    template: WorkoutTemplateEntity,
-    onClick: () -> Unit,
-    onStartWorkout: () -> Unit
+private fun QuickNavTelemetryPillCard(
+    title: String,
+    subtitle: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    accentColor: Color,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    StandardSurfaceCard(
+        modifier = modifier,
+        onClick = onClick,
+        borderColor = MaterialTheme.colorScheme.outlineVariant
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        StatusBadge(text = template.dayCode)
-                        Text(text = template.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Icon(
+            imageVector = icon,
+            contentDescription = title,
+            tint = accentColor,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(
+            text = subtitle,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1
+        )
+    }
+}
+
+@Composable
+fun DashboardTemplateCard(
+    template: WorkoutTemplateEntity,
+    onCardClick: () -> Unit,
+    onStartClick: () -> Unit
+) {
+    StandardSurfaceCard(
+        onClick = onCardClick,
+        borderColor = if (template.isAiProgram) {
+            ElectricCobalt.copy(alpha = 0.35f)
+        } else {
+            MaterialTheme.colorScheme.outlineVariant
+        }
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    val badgeLabel = if (template.dayCode.startsWith("PROGRAM_DAY_")) {
+                        "DAY ${template.dayCode.removePrefix("PROGRAM_DAY_")}"
+                    } else {
+                        "${stringResource(R.string.day).uppercase()} ${template.dayCode}"
                     }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(text = com.doruk.fitprogress.core.util.LocalizationUtils.getTemplateDescription(template.dayFocus), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    StatusPillBadge(
+                        text = badgeLabel,
+                        type = if (template.isAiProgram) BadgeType.AI else BadgeType.INFO
+                    )
+                    if (template.isAiProgram) {
+                        StatusPillBadge(
+                            text = "AI COACH",
+                            type = BadgeType.SUCCESS
+                        )
+                    }
                 }
-                Spacer(modifier = Modifier.width(16.dp))
-                PrimaryActionButton(
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Text(
+                    text = template.name,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = LocalizationUtils.getTemplateDescription(template.dayFocus),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Button(
+                onClick = onStartClick,
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.PlayArrow,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
                     text = stringResource(R.string.start),
-                    onClick = onStartWorkout,
-                    modifier = Modifier.width(120.dp).height(48.dp)
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold
                 )
             }
         }

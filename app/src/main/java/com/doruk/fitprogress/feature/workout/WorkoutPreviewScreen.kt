@@ -1,37 +1,38 @@
 package com.doruk.fitprogress.feature.workout
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.doruk.fitprogress.core.database.entity.TemplateWithDetails
-import com.doruk.fitprogress.core.ui.components.PrimaryActionButton
-import com.doruk.fitprogress.theme.DeepNavy
-import com.doruk.fitprogress.theme.ElectricCyan
-import com.doruk.fitprogress.theme.VividViolet
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.doruk.fitprogress.R
+import com.doruk.fitprogress.core.database.entity.TemplateExerciseWithDetails
+import com.doruk.fitprogress.core.ui.components.*
+import com.doruk.fitprogress.core.util.LocalizationUtils
+import com.doruk.fitprogress.theme.AthleticEmerald
+import com.doruk.fitprogress.theme.ElectricCobalt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkoutPreviewScreen(
     templateId: String,
     onBackClick: () -> Unit,
-    onStartWorkoutClick: (String) -> Unit,
+    onStartWorkoutClick: () -> Unit,
     viewModel: WorkoutPreviewViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -39,44 +40,175 @@ fun WorkoutPreviewScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.workout_preview), fontWeight = FontWeight.Bold) },
+                title = {
+                    val titleText = when (val state = uiState) {
+                        is WorkoutPreviewUiState.Success -> state.details.template.name
+                        else -> stringResource(R.string.workout_preview)
+                    }
+                    Text(
+                        text = titleText,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.back),
+                            tint = MaterialTheme.colorScheme.onBackground
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = MaterialTheme.colorScheme.primary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.primary
+                    containerColor = MaterialTheme.colorScheme.background
                 )
             )
         },
-        containerColor = MaterialTheme.colorScheme.background
-    ) { padding ->
-        Box(modifier = Modifier.padding(padding).fillMaxSize()) {
-            when (val state = uiState) {
-                is WorkoutPreviewUiState.Loading -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center),
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-                is WorkoutPreviewUiState.Error -> {
-                    Column(
-                        modifier = Modifier.align(Alignment.Center).padding(32.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(48.dp))
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(state.message, color = MaterialTheme.colorScheme.error)
+        bottomBar = {
+            if (uiState is WorkoutPreviewUiState.Success) {
+                Surface(
+                    color = MaterialTheme.colorScheme.background,
+                    tonalElevation = 0.dp,
+                    shadowElevation = 0.dp,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column {
+                        HorizontalDivider(
+                            thickness = 1.dp,
+                            color = MaterialTheme.colorScheme.outlineVariant
+                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 12.dp)
+                        ) {
+                            PrimaryActionButton(
+                                text = stringResource(R.string.start_workout),
+                                onClick = onStartWorkoutClick,
+                                icon = Icons.Default.PlayArrow
+                            )
+                        }
                     }
                 }
-                is WorkoutPreviewUiState.Success -> {
-                    PreviewContent(
-                        details = state.details,
-                        onStartWorkoutClick = { onStartWorkoutClick(templateId) }
+            }
+        },
+        containerColor = MaterialTheme.colorScheme.background
+    ) { paddingValues ->
+        when (val state = uiState) {
+            is WorkoutPreviewUiState.Loading -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                }
+            }
+            is WorkoutPreviewUiState.Error -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    GymFlowEmptyStates.Error(
+                        message = state.message,
+                        onRetry = onBackClick
                     )
+                }
+            }
+            is WorkoutPreviewUiState.Success -> {
+                val currentDetails = state.details
+                val sortedWarmups = currentDetails.warmupInstructions.sortedBy { it.orderIndex }
+                val sortedExercises = currentDetails.exercises.sortedBy { it.templateExercise.orderIndex }
+
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                        .padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp)
+                ) {
+                    // Header Summary Card
+                    item {
+                        val subtitleLabel = if (currentDetails.template.dayCode.startsWith("PROGRAM_DAY_")) {
+                            "DAY ${currentDetails.template.dayCode.removePrefix("PROGRAM_DAY_")}"
+                        } else {
+                            "${stringResource(R.string.day).uppercase()} ${currentDetails.template.dayCode}"
+                        }
+                        GradientHeaderCard(
+                            title = currentDetails.template.name,
+                            subtitle = subtitleLabel
+                        )
+                    }
+
+                    // Warm-up Section
+                    if (sortedWarmups.isNotEmpty()) {
+                        item {
+                            Text(
+                                text = stringResource(R.string.warm_up),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = ElectricCobalt,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                        }
+                        items(sortedWarmups, key = { it.id }) { warmup ->
+                            StandardSurfaceCard {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = LocalizationUtils.getWarmupInstruction(warmup.description),
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    if (warmup.durationMinutes != null) {
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        StatusPillBadge(
+                                            text = "${warmup.durationMinutes} ${stringResource(R.string.min)}",
+                                            type = BadgeType.INFO
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Exercises Header
+                    item {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = stringResource(R.string.exercises),
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                            StatusPillBadge(
+                                text = "${sortedExercises.size} MOVEMENTS",
+                                type = BadgeType.NEUTRAL
+                            )
+                        }
+                    }
+
+                    // Exercises List
+                    items(sortedExercises, key = { it.templateExercise.id }) { exItem ->
+                        ExercisePreviewTelemetryCard(exItem)
+                    }
                 }
             }
         }
@@ -84,90 +216,127 @@ fun WorkoutPreviewScreen(
 }
 
 @Composable
-private fun PreviewContent(
-    details: TemplateWithDetails,
-    onStartWorkoutClick: () -> Unit
-) {
-    Column(modifier = Modifier.fillMaxSize()) {
-        LazyColumn(
-            modifier = Modifier.weight(1f),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+fun ExercisePreviewTelemetryCard(item: TemplateExerciseWithDetails) {
+    val tplEx = item.templateExercise
+    val ex = item.exercise
+
+    StandardSurfaceCard(
+        borderColor = if (tplEx.isSuperset) {
+            ElectricCobalt.copy(alpha = 0.40f)
+        } else {
+            MaterialTheme.colorScheme.outlineVariant
+        }
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            item {
-                Text(details.template.name, style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                if (details.template.dayFocus.isNotBlank()) {
-                    Text("${stringResource(R.string.focus_label)} ${details.template.dayFocus}", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.secondary)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.weight(1f)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "${tplEx.orderIndex}",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
                 }
+                Text(
+                    text = ex.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
             }
 
-            if (details.warmupInstructions.isNotEmpty()) {
-                item {
-                    Text(stringResource(R.string.warm_up), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold)
-                }
-                items(details.warmupInstructions.sortedBy { it.orderIndex }) { warmup ->
-                    Card(
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            Text(com.doruk.fitprogress.core.util.LocalizationUtils.getWarmupInstruction(warmup.description), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            if (warmup.durationMinutes != null) {
-                                Text("${stringResource(R.string.duration_label)} ${warmup.durationMinutes} ${stringResource(R.string.min)}", color = MaterialTheme.colorScheme.primary)
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (details.exercises.isNotEmpty()) {
-                item {
-                    Text(stringResource(R.string.exercises), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold)
-                }
-                val grouped = details.exercises.sortedBy { it.templateExercise.orderIndex }.groupBy { it.templateExercise.supersetGroupId }
-                
-                grouped.forEach { (supersetId, exercisesInGroup) ->
-                    item {
-                        Card(
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                if (supersetId != null) {
-                                    Text(stringResource(R.string.superset), color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall)
-                                }
-                                exercisesInGroup.forEach { ex ->
-                                    Text(ex.exercise.name, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                                    val sets = ex.templateExercise.targetSets
-                                    val reps = if (ex.templateExercise.targetRepsMin == ex.templateExercise.targetRepsMax) "${ex.templateExercise.targetRepsMin}" else "${ex.templateExercise.targetRepsMin}-${ex.templateExercise.targetRepsMax}"
-                                    val formattedWeight = if (ex.templateExercise.targetWeightMin != null) com.doruk.fitprogress.core.util.FormatUtils.formatDouble(ex.templateExercise.targetWeightMin.toDouble(), com.doruk.fitprogress.core.util.FormatUtils.getAppLocale(androidx.compose.ui.platform.LocalContext.current)) else ""
-                                    val weight = if (ex.templateExercise.targetWeightMin != null) "${formattedWeight} ${ex.templateExercise.weightUnit}" else stringResource(R.string.bodyweight)
-                                    val formattedRpe = if (ex.templateExercise.rpeMin != null) com.doruk.fitprogress.core.util.FormatUtils.formatDouble(ex.templateExercise.rpeMin.toDouble(), com.doruk.fitprogress.core.util.FormatUtils.getAppLocale(androidx.compose.ui.platform.LocalContext.current)) else ""
-                                    val rpe = if (ex.templateExercise.rpeMin != null) " ${stringResource(R.string.at_rpe)} ${formattedRpe}" else ""
-                                    Text("${sets} ${stringResource(R.string.sets_x)} ${reps} ${stringResource(R.string.reps_pipe)} ${weight}${rpe}", color = MaterialTheme.colorScheme.onSurface)
-                                    if (ex.templateExercise.restSeconds > 0) {
-                                        Text("${stringResource(R.string.rest_label)} ${ex.templateExercise.restSeconds} ${stringResource(R.string.s)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    }
-                                    if (!ex.exercise.coachNote.isNullOrBlank()) {
-                                        Text("${stringResource(R.string.note_label)} ${com.doruk.fitprogress.core.util.LocalizationUtils.getCoachNoteString(ex.exercise.coachNote)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    }
-                                    if (ex.exercise.requiresStraps) {
-                                        Text(stringResource(R.string.requires_straps), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary)
-                                    }
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                }
-                            }
-                        }
-                    }
-                }
+            if (tplEx.isSuperset) {
+                StatusPillBadge(
+                    text = stringResource(R.string.superset),
+                    type = BadgeType.AI
+                )
             }
         }
-        
-        Box(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-            PrimaryActionButton(
-                onClick = onStartWorkoutClick,
-                text = stringResource(R.string.start_workout)
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        val weightStr = when {
+            tplEx.targetWeightMin != null && tplEx.targetWeightMax != null -> {
+                if (tplEx.targetWeightMin == tplEx.targetWeightMax) {
+                    "${tplEx.targetWeightMin} ${tplEx.weightUnit}"
+                } else {
+                    "${tplEx.targetWeightMin}-${tplEx.targetWeightMax} ${tplEx.weightUnit}"
+                }
+            }
+            tplEx.targetWeightMin != null -> "${tplEx.targetWeightMin} ${tplEx.weightUnit}"
+            else -> stringResource(R.string.bodyweight)
+        }
+
+        val repsStr = if (tplEx.targetRepsMin == tplEx.targetRepsMax) {
+            "${tplEx.targetRepsMin}"
+        } else {
+            "${tplEx.targetRepsMin}-${tplEx.targetRepsMax}"
+        }
+
+        val rpeStr = if (tplEx.rpeMin != null) {
+            if (tplEx.rpeMin == tplEx.rpeMax || tplEx.rpeMax == null) {
+                "${stringResource(R.string.at_rpe)} ${tplEx.rpeMin}"
+            } else {
+                "${stringResource(R.string.at_rpe)} ${tplEx.rpeMin}-${tplEx.rpeMax}"
+            }
+        } else ""
+
+        // Telemetry Prescription Strip
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(10.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f))
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(10.dp))
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "${tplEx.targetSets} ${stringResource(R.string.sets_x)} $repsStr ${stringResource(R.string.reps_pipe)} $weightStr $rpeStr".trim(),
+                style = MaterialTheme.typography.labelLarge,
+                color = ElectricCobalt,
+                fontWeight = FontWeight.Bold
+            )
+
+            Text(
+                text = "${stringResource(R.string.rest_label)} ${tplEx.restSeconds}${stringResource(R.string.s)}",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+
+        if (!ex.coachNote.isNullOrBlank()) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "${stringResource(R.string.note_label)} ${LocalizationUtils.getCoachNoteString(ex.coachNote)}",
+                style = MaterialTheme.typography.bodySmall,
+                color = AthleticEmerald,
+                fontWeight = FontWeight.Medium
+            )
+        }
+
+        if (ex.requiresStraps) {
+            Spacer(modifier = Modifier.height(8.dp))
+            StatusPillBadge(
+                text = stringResource(R.string.requires_straps),
+                type = BadgeType.WARNING
             )
         }
     }

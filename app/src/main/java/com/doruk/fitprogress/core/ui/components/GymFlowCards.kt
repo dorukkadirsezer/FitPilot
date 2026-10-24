@@ -1,126 +1,174 @@
 package com.doruk.fitprogress.core.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.doruk.fitprogress.theme.ElectricCyan
-import com.doruk.fitprogress.theme.VividViolet
+import com.doruk.fitprogress.theme.AthleticEmerald
+import com.doruk.fitprogress.theme.ElectricCobalt
+
+/**
+ * FitPilot Zero-Shadow Standard Surface Card:
+ * - 0.dp shadow elevation
+ * - 16.dp rounded corners
+ * - 1.dp Slate Hairline border (outlineVariant)
+ */
+@Composable
+fun StandardSurfaceCard(
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
+    borderColor: Color = MaterialTheme.colorScheme.outlineVariant,
+    containerColor: Color = MaterialTheme.colorScheme.surface,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    val cardModifier = if (onClick != null) {
+        modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+    } else {
+        modifier.fillMaxWidth()
+    }
+
+    Card(
+        modifier = cardModifier,
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(1.dp, borderColor)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            content = content
+        )
+    }
+}
 
 @Composable
 fun MetricCard(
     title: String,
     modifier: Modifier = Modifier,
-    content: @Composable () -> Unit
+    onClick: (() -> Unit)? = null,
+    content: @Composable ColumnScope.() -> Unit
 ) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    StandardSurfaceCard(
+        modifier = modifier,
+        onClick = onClick
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        if (title.isNotBlank()) {
             Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
+                text = title.uppercase(),
+                style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 8.dp)
+                fontWeight = FontWeight.Bold
             )
-            content()
+            Spacer(modifier = Modifier.height(8.dp))
         }
+        content()
     }
 }
 
 @Composable
 fun GradientHeaderCard(
     title: String,
-    subtitle: String,
-    modifier: Modifier = Modifier
+    subtitle: String? = null,
+    modifier: Modifier = Modifier,
+    actionContent: (@Composable () -> Unit)? = null
 ) {
+    val gradient = Brush.linearGradient(
+        colors = listOf(
+            ElectricCobalt.copy(alpha = 0.14f),
+            AthleticEmerald.copy(alpha = 0.08f)
+        )
+    )
+
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(1.dp, ElectricCobalt.copy(alpha = 0.30f))
     ) {
         Box(
             modifier = Modifier
-                .background(
-                    Brush.linearGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
-                            MaterialTheme.colorScheme.secondary.copy(alpha = 0.2f),
-                            MaterialTheme.colorScheme.surface
-                        )
-                    )
-                )
+                .background(gradient)
+                .padding(20.dp)
                 .fillMaxWidth()
-                .padding(24.dp)
         ) {
-            Column {
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    if (subtitle != null) {
+                        Text(
+                            text = subtitle.uppercase(),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = ElectricCobalt,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                    }
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                if (actionContent != null) {
+                    Spacer(modifier = Modifier.width(16.dp))
+                    actionContent()
+                }
             }
         }
     }
 }
 
 @Composable
-fun AiFeatureCard(
+fun MetricStatCard(
     title: String,
-    description: String,
+    value: String,
+    subtitle: String? = null,
+    accentColor: Color = ElectricCobalt,
     modifier: Modifier = Modifier,
-    onClick: (() -> Unit)? = null,
-    content: @Composable () -> Unit
+    onClick: (() -> Unit)? = null
 ) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        onClick = onClick ?: {},
-        enabled = onClick != null
+    StandardSurfaceCard(
+        modifier = modifier,
+        onClick = onClick
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = value,
+            style = MaterialTheme.typography.headlineMedium,
+            color = accentColor,
+            fontWeight = FontWeight.Bold
+        )
+        if (subtitle != null) {
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.secondary,
-                fontWeight = FontWeight.Bold
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            if (description.isNotEmpty()) {
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 4.dp, bottom = 12.dp)
-                )
-            }
-            content()
         }
     }
 }

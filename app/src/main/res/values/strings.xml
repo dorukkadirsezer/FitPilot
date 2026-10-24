@@ -208,7 +208,7 @@
     <string name="warmup_set_number">Warm-up Set %1$d</string>
     <string name="working_set_number">Working Set %1$d</string>
 
-    <string name="cardio_summary_format">%1$s Ã¢â‚¬Â¢ Target: %2$s Ã¢â‚¬Â¢ Completed: %3$s</string>
+    <string name="cardio_summary_format">%1$s • Target: %2$s • Completed: %3$s</string>
     <string name="reminder_controlled_mode">CONTROLLED MODE: Focus strictly on form. Avoid pushing for progression today.</string>
     <string name="meal_breakfast">Breakfast</string>
     <string name="meal_lunch">Lunch</string>
@@ -254,8 +254,8 @@
     <string name="dialog_finish">Finish</string>
     <string name="section_warmup_sets">Warm-up Sets</string>
     <string name="section_working_sets">Working Sets</string>
-    <string name="label_warmup_short">Warm-up %1</string>
-    <string name="label_set_short">Set %1</string>
+    <string name="label_warmup_short">Warm-up %1$s</string>
+    <string name="label_set_short">Set %1$s</string>
     <string name="workout_detail_rest_format">  Rest: %1$ds (target %2$ds)</string>
     <string name="workout_detail_advice_format">  Advice: %1$s</string>
     <string name="cardio_session_title">Cardio Session</string>

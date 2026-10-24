@@ -1,74 +1,126 @@
 package com.doruk.fitprogress.theme
 
-import android.os.Build
+import android.app.Activity
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
+import com.doruk.fitprogress.core.domain.model.ThemeMode
 
 private val DarkColorScheme = darkColorScheme(
-    primary = ElectricCyan,
-    secondary = VividViolet,
-    tertiary = NeonGreen,
-    background = DeepNavy,
-    surface = DarkCharcoal,
-    surfaceVariant = DarkCharcoal, // Fallback for some components
-    error = CoralRed,
-    onPrimary = DeepNavy, // Text on primary button should be dark for high contrast
-    onSecondary = TextPrimaryDark,
+    primary = ElectricCobalt,
+    onPrimary = Color.White,
+    primaryContainer = CobaltContainerDark,
+    onPrimaryContainer = OnCobaltContainerDark,
+
+    secondary = AthleticEmerald,
+    onSecondary = Color(0xFF022C22),
+    secondaryContainer = EmeraldContainerDark,
+    onSecondaryContainer = OnEmeraldContainerDark,
+
+    tertiary = TelemetryAmber,
+    onTertiary = Color(0xFF451A03),
+    tertiaryContainer = AmberContainerDark,
+    onTertiaryContainer = OnAmberContainerDark,
+
+    error = CrimsonAlert,
+    onError = Color.White,
+    errorContainer = ErrorContainerDark,
+    onErrorContainer = OnErrorContainerDark,
+
+    background = DeepObsidianBg,
     onBackground = TextPrimaryDark,
+
+    surface = DarkSlateSurface,
     onSurface = TextPrimaryDark,
+    surfaceVariant = InteractiveSlateFill,
     onSurfaceVariant = TextSecondaryDark,
-    onError = TextPrimaryDark
+
+    surfaceContainerLowest = DeepObsidianBg,
+    surfaceContainerLow = DarkSlateSurface,
+    surfaceContainer = ElevatedSlateCard,
+    surfaceContainerHigh = InteractiveSlateFill,
+    surfaceContainerHighest = SlateOutlineDark,
+
+    outline = SlateOutlineDark,
+    outlineVariant = SlateHairlineDark
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = ElectricCyanLight,
-    secondary = VividVioletLight,
-    tertiary = NeonGreen,
-    background = LightBackground,
-    surface = LightSurface,
-    surfaceVariant = LightSurface,
-    error = CoralRed,
-    onPrimary = DeepNavy,
-    onSecondary = TextPrimaryLight,
+    primary = AthleticCobalt,
+    onPrimary = Color.White,
+    primaryContainer = CobaltContainerLight,
+    onPrimaryContainer = OnCobaltContainerLight,
+
+    secondary = DeepEmerald,
+    onSecondary = Color.White,
+    secondaryContainer = EmeraldContainerLight,
+    onSecondaryContainer = OnEmeraldContainerLight,
+
+    tertiary = RichAmber,
+    onTertiary = Color.White,
+    tertiaryContainer = AmberContainerLight,
+    onTertiaryContainer = OnAmberContainerLight,
+
+    error = DeepCrimsonAlert,
+    onError = Color.White,
+    errorContainer = ErrorContainerLight,
+    onErrorContainer = OnErrorContainerLight,
+
+    background = CoolAlabasterBg,
     onBackground = TextPrimaryLight,
+
+    surface = PureWhiteSurface,
     onSurface = TextPrimaryLight,
+    surfaceVariant = LightSlateFill,
     onSurfaceVariant = TextSecondaryLight,
-    onError = TextPrimaryLight
+
+    surfaceContainerLowest = PureWhiteSurface,
+    surfaceContainerLow = CoolAlabasterBg,
+    surfaceContainer = SoftSlateCard,
+    surfaceContainerHigh = LightSlateFill,
+    surfaceContainerHighest = SlateOutlineLight,
+
+    outline = SlateOutlineLight,
+    outlineVariant = SlateHairlineLight
 )
 
 @Composable
 fun GymFlowAITheme(
-    themeMode: com.doruk.fitprogress.core.domain.model.ThemeMode = com.doruk.fitprogress.core.domain.model.ThemeMode.SYSTEM_DEFAULT,
-    // Disable dynamic color to maintain the strict branding colors (Cyan/Violet)
+    themeMode: ThemeMode = ThemeMode.SYSTEM_DEFAULT,
     dynamicColor: Boolean = false,
-    content: @Composable () -> Unit,
+    content: @Composable () -> Unit
 ) {
-    val isSystemDark = isSystemInDarkTheme()
-    val useDarkTheme = when (themeMode) {
-        com.doruk.fitprogress.core.domain.model.ThemeMode.LIGHT -> false
-        com.doruk.fitprogress.core.domain.model.ThemeMode.DARK -> true
-        com.doruk.fitprogress.core.domain.model.ThemeMode.SYSTEM_DEFAULT -> isSystemDark
+    val darkTheme = when (themeMode) {
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+        ThemeMode.SYSTEM_DEFAULT -> isSystemInDarkTheme()
     }
 
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (useDarkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            val window = (view.context as Activity).window
+            window.statusBarColor = colorScheme.background.toArgb()
+            window.navigationBarColor = colorScheme.background.toArgb()
+            val insetsController = WindowCompat.getInsetsController(window, view)
+            insetsController.isAppearanceLightStatusBars = !darkTheme
+            insetsController.isAppearanceLightNavigationBars = !darkTheme
         }
-        useDarkTheme -> DarkColorScheme
-        else -> LightColorScheme
     }
 
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
-        shapes = Shapes, // Reference to custom Shapes
+        shapes = Shapes,
         content = content
     )
 }

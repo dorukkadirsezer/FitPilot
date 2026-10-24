@@ -1,36 +1,47 @@
 package com.doruk.fitprogress.feature.history
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.widget.Toast
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material3.*
-import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.doruk.fitprogress.core.ui.components.AiActionButton
-import com.doruk.fitprogress.core.ui.components.PrimaryActionButton
-import com.doruk.fitprogress.theme.ElectricCyan
-import com.doruk.fitprogress.theme.VividViolet
-import java.text.SimpleDateFormat
-import java.util.Date
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.doruk.fitprogress.R
+import com.doruk.fitprogress.core.database.entity.SetLogWithDetailsDto
+import com.doruk.fitprogress.core.database.entity.WorkoutDetailExerciseDto
+import com.doruk.fitprogress.core.ui.components.BadgeType
+import com.doruk.fitprogress.core.ui.components.StandardSurfaceCard
+import com.doruk.fitprogress.core.ui.components.StatusPillBadge
+import com.doruk.fitprogress.core.util.FormatUtils
+import com.doruk.fitprogress.core.util.LocalizationUtils
+import com.doruk.fitprogress.theme.AthleticEmerald
+import com.doruk.fitprogress.theme.ElectricCobalt
+import com.doruk.fitprogress.theme.TelemetryAmber
 import java.util.Locale
-
-fun formatExerciseId(id: String): String {
-    return id.removePrefix("ex_")
-        .split("_")
-        .joinToString(" ") { word -> 
-            word.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() } 
-        }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,280 +49,349 @@ fun WorkoutDetailScreen(
     onNavigateBack: () -> Unit,
     viewModel: WorkoutDetailViewModel = hiltViewModel()
 ) {
-    val detail by viewModel.detail.collectAsStateWithLifecycle()
-
-    val format = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+    val detailState by viewModel.detail.collectAsStateWithLifecycle()
+    val isAiEnabled by viewModel.isAiEnabled.collectAsStateWithLifecycle()
+    val aiSummary by viewModel.aiSummary.collectAsStateWithLifecycle()
+    val isGeneratingSummary by viewModel.isGeneratingSummary.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(com.doruk.fitprogress.R.string.workout_details), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
+                title = {
+                    Text(
+                        text = stringResource(R.string.workout_details),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                },
                 navigationIcon = {
-                    TextButton(onClick = onNavigateBack) {
-                        Text(stringResource(com.doruk.fitprogress.R.string.back), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.back),
+                            tint = MaterialTheme.colorScheme.onBackground
+                        )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
             )
-        }
-    ) { padding ->
-        if (detail == null) {
-            Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+        },
+        containerColor = MaterialTheme.colorScheme.background
+    ) { paddingValues ->
+        if (detailState == null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentAlignment = Alignment.Center
+            ) {
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
-        } else {
-            val d = detail!!
-            LazyColumn(modifier = Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(bottom = 24.dp)) {
-                item {
-                    val finishedAt = d.session.finishedAt ?: d.session.startedAt
-                    val locale = com.doruk.fitprogress.core.util.FormatUtils.getAppLocale(androidx.compose.ui.platform.LocalContext.current)
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text("${stringResource(com.doruk.fitprogress.R.string.date_label)} ${com.doruk.fitprogress.core.util.FormatUtils.formatDate(finishedAt, locale)}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        
-                        val completedSetCount = d.exercises.sumOf { ex -> ex.sets.count { it.setLog.completed && !it.setLog.isSkipped } }
-                        val skippedSetCount = d.exercises.sumOf { ex -> ex.sets.count { it.setLog.isSkipped } }
+            return@Scaffold
+        }
 
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Column {
-                                Text(stringResource(com.doruk.fitprogress.R.string.duration), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text("${d.session.durationSeconds?.let { it / 60 } ?: 0} min", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
-                            }
-                            Column {
-                                Text(stringResource(com.doruk.fitprogress.R.string.completed_label), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text("$completedSetCount sets", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
-                            }
-                            Column {
-                                Text(stringResource(com.doruk.fitprogress.R.string.skipped_label), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text("$skippedSetCount sets", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
-                            }
-                        }
-                        
-                        Spacer(modifier = Modifier.height(12.dp))
-                        
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Column {
-                                Text(stringResource(com.doruk.fitprogress.R.string.total_volume), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text("${com.doruk.fitprogress.core.util.FormatUtils.formatDouble(d.session.totalWorkingVolumeKg, com.doruk.fitprogress.core.util.FormatUtils.getAppLocale(androidx.compose.ui.platform.LocalContext.current))} kg", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
-                            }
-                            Column {
-                                Text(stringResource(com.doruk.fitprogress.R.string.avg_rpe), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text(com.doruk.fitprogress.core.util.FormatUtils.formatDouble(d.session.averageRpe, com.doruk.fitprogress.core.util.FormatUtils.getAppLocale(androidx.compose.ui.platform.LocalContext.current)), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
-                            }
-                            Column {
-                                Text(stringResource(com.doruk.fitprogress.R.string.smart_coaching), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                val overrideStr = if (d.smartCoachingOverridden == true) "Overridden" else "Followed"
-                                Text(overrideStr, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
-                            }
-                        }
-                        
-                        if (!d.session.note.isNullOrBlank()) {
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)),
-                                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-                            ) {
-                                Row(modifier = Modifier.padding(16.dp)) {
-                                    Icon(
-                                        imageVector = androidx.compose.material.icons.Icons.Default.AutoAwesome, 
-                                        contentDescription = "Workout Note",
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(24.dp).padding(top = 2.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    Column {
-                                        Text(stringResource(com.doruk.fitprogress.R.string.workout_note), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(d.session.note ?: "", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
-                                    }
-                                }
-                            }
-                        }
-                    }
+        val detail = detailState!!
+        val context = LocalContext.current
+        val locale = FormatUtils.getAppLocale(context)
+        val dateMillis = detail.session.finishedAt ?: detail.session.startedAt
+        val dateStr = FormatUtils.formatDate(dateMillis, locale)
+        val durationStr = FormatUtils.formatDuration(detail.session.durationSeconds, locale)
 
-                    val isAiEnabled by viewModel.isAiEnabled.collectAsStateWithLifecycle()
-                    val aiSummary by viewModel.aiSummary.collectAsStateWithLifecycle()
-                    val isGenerating by viewModel.isGeneratingSummary.collectAsStateWithLifecycle()
-                    val exportStatus by viewModel.exportStatus.collectAsStateWithLifecycle()
-                    val snackbarHostState = androidx.compose.runtime.remember { SnackbarHostState() }
-
-                    androidx.compose.runtime.LaunchedEffect(exportStatus) {
-                        if (exportStatus != null) {
-                            snackbarHostState.showSnackbar(exportStatus!!)
-                            viewModel.clearExportStatus()
-                        }
-                    }
-
-                    Box(modifier = Modifier.fillMaxWidth()) {
-                        SnackbarHost(hostState = snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter))
-                    }
-
-                    if (isAiEnabled) {
-                        Card(
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f)),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.padding(end = 8.dp))
-                                    Text(stringResource(com.doruk.fitprogress.R.string.ai_workout_summary), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary)
-                                }
-                                Spacer(modifier = Modifier.height(12.dp))
-                                
-                                if (aiSummary != null) {
-                                    Text(aiSummary!!, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
-                                    Spacer(modifier = Modifier.height(12.dp))
-                                    Text(stringResource(com.doruk.fitprogress.R.string.ai_summary_disclaimer), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                } else {
-                                    AiActionButton(
-                                        onClick = { viewModel.generateAiSummary() },
-                                        text = if (isGenerating) stringResource(com.doruk.fitprogress.R.string.generating_summary) else stringResource(com.doruk.fitprogress.R.string.generate_summary),
-                                        modifier = Modifier.fillMaxWidth(),
-                                        enabled = !isGenerating
-                                    )
-                                }
-
-                                Spacer(modifier = Modifier.height(12.dp))
-                                PrimaryActionButton(
-                                    onClick = { viewModel.exportToCoach() },
-                                    text = "Export to Coach",
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(16.dp))
-                    } else {
-                        // AI Disabled but we still want to show the export button
-                        Card(
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                PrimaryActionButton(
-                                    onClick = { viewModel.exportToCoach() },
-                                    text = "Export to Coach",
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                            }
-                        }
-                    }
-                }
-
-                items(d.exercises) { exDto ->
-                    Card(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(top = 8.dp, bottom = 32.dp)
+        ) {
+            // 1. Session Header & 3-Column Tabular Metric Strip
+            item {
+                StandardSurfaceCard(borderColor = ElectricCobalt.copy(alpha = 0.35f)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(formatExerciseId(exDto.exerciseSession.exerciseId), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                            
-                            if (!exDto.exerciseSession.note.isNullOrBlank()) {
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Card(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
-                                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)),
-                                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-                                ) {
-                                    Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(
-                                            imageVector = androidx.compose.material.icons.Icons.Default.Edit, 
-                                            contentDescription = "Exercise Note",
-                                            tint = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text("${exDto.exerciseSession.note}", style = MaterialTheme.typography.bodyMedium, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
-                                    }
-                                }
+                        Column(modifier = Modifier.weight(1f)) {
+                            val dayPrefix = when {
+                                detail.dayCode == null -> ""
+                                detail.dayCode.startsWith("PROGRAM_DAY_") -> "Day ${detail.dayCode.removePrefix("PROGRAM_DAY_")} — "
+                                else -> "${stringResource(R.string.day)} ${detail.dayCode} — "
                             }
-                            
-                            val warmups = exDto.sets.filter { it.setLog.setType == "WARMUP" }
-                            val working = exDto.sets.filter { it.setLog.setType == "WORKING" }
+                            Text(
+                                text = "$dayPrefix${detail.workoutName ?: stringResource(R.string.custom_workout)}",
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        StatusPillBadge(
+                            text = dateStr,
+                            type = BadgeType.INFO
+                        )
+                    }
 
-                            if (warmups.isNotEmpty()) {
-                                Spacer(modifier = Modifier.height(12.dp))
-                                Text(stringResource(com.doruk.fitprogress.R.string.warm_ups), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Spacer(modifier = Modifier.height(4.dp))
-                                warmups.forEach { logWithDetails ->
-                                    val log = logWithDetails.setLog
-                                    val status = if (log.isSkipped) " (Skipped)" else if (!log.completed) " (Incomplete)" else ""
-                                    val actualWeightStr = com.doruk.fitprogress.core.util.FormatUtils.formatDouble(log.actualWeight, com.doruk.fitprogress.core.util.FormatUtils.getAppLocale(androidx.compose.ui.platform.LocalContext.current))
-                                    Text("${stringResource(com.doruk.fitprogress.R.string.warmup_set_number).format(log.setNumber)}: ${log.actualReps ?: log.targetReps} reps @ $actualWeightStr ${log.weightUnit}$status", style = MaterialTheme.typography.bodyMedium)
-                                    if (!log.note.isNullOrBlank()) {
-                                        Row(modifier = Modifier.padding(top = 4.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                                            Icon(
-                                                imageVector = androidx.compose.material.icons.Icons.Default.Edit,
-                                                contentDescription = "Set Note",
-                                                tint = MaterialTheme.colorScheme.primary,
-                                                modifier = Modifier.size(14.dp)
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // 3-Column Tabular Metric Strip
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp))
+                            .padding(vertical = 10.dp, horizontal = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        TabularMetricStripCell(
+                            label = stringResource(R.string.duration),
+                            value = durationStr,
+                            valueColor = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Box(
+                            modifier = Modifier
+                                .width(1.dp)
+                                .height(28.dp)
+                                .background(MaterialTheme.colorScheme.outlineVariant)
+                        )
+                        TabularMetricStripCell(
+                            label = stringResource(R.string.total_volume),
+                            value = "${FormatUtils.formatDouble(detail.session.totalWorkingVolumeKg, locale, 0)} kg",
+                            valueColor = ElectricCobalt,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Box(
+                            modifier = Modifier
+                                .width(1.dp)
+                                .height(28.dp)
+                                .background(MaterialTheme.colorScheme.outlineVariant)
+                        )
+                        TabularMetricStripCell(
+                            label = stringResource(R.string.avg_rpe),
+                            value = if (detail.session.averageRpe != null) {
+                                FormatUtils.formatDouble(detail.session.averageRpe, locale, 1)
+                            } else {
+                                stringResource(R.string.workout_detail_na)
+                            },
+                            valueColor = TelemetryAmber,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    if (detail.smartCoachingMode != null) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        StatusPillBadge(
+                            text = "${stringResource(R.string.smart_coaching)}: ${LocalizationUtils.getEnumString(detail.smartCoachingMode)}",
+                            type = BadgeType.AI
+                        )
+                    }
+
+                    if (!detail.session.note.isNullOrBlank()) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = "${stringResource(R.string.workout_note)}: ${detail.session.note}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontStyle = FontStyle.Italic,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Side-by-Side Action Bar: Export to Coach & AI Summary (Zero Layout Shift)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = {
+                                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                val exportText = buildString {
+                                    appendLine("Workout: ${detail.workoutName ?: "Session"} ($dateStr)")
+                                    appendLine("Volume: ${detail.session.totalWorkingVolumeKg} kg | Duration: $durationStr | Avg RPE: ${detail.session.averageRpe ?: "-"}")
+                                    detail.exercises.forEach { ex ->
+                                        val workingCount = ex.sets.count { it.setLog.setType != "WARMUP" && it.setLog.completed }
+                                        appendLine("- ${ex.exercise?.name ?: "Exercise"}: $workingCount working sets")
+                                    }
+                                }
+                                clipboard.setPrimaryClip(ClipData.newPlainText("FitPilot Session Export", exportText))
+                                Toast.makeText(context, "Session telemetry copied to clipboard", Toast.LENGTH_SHORT).show()
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(46.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = MaterialTheme.colorScheme.onSurface
+                            ),
+                            contentPadding = PaddingValues(horizontal = 12.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ContentCopy,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = ElectricCobalt
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Export to Coach",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1
+                            )
+                        }
+
+                        if (isAiEnabled) {
+                            Button(
+                                onClick = { viewModel.generateAiSummary() },
+                                enabled = !isGeneratingSummary,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(46.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                                    disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                    disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                ),
+                                contentPadding = PaddingValues(horizontal = 12.dp)
+                            ) {
+                                // Fixed 18.dp Box + Crossfade prevents any horizontal width jump
+                                Box(
+                                    modifier = Modifier.size(18.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Crossfade(
+                                        targetState = isGeneratingSummary,
+                                        animationSpec = tween(180),
+                                        label = "aiSummarySpinner"
+                                    ) { generating ->
+                                        if (generating) {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.size(16.dp),
+                                                strokeWidth = 2.dp,
+                                                color = ElectricCobalt
                                             )
-                                            Spacer(modifier = Modifier.width(4.dp))
-                                            Text("${log.note}", style = MaterialTheme.typography.bodySmall, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic, color = MaterialTheme.colorScheme.onSurface)
+                                        } else {
+                                            Icon(
+                                                imageVector = Icons.Default.AutoAwesome,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(16.dp)
+                                            )
                                         }
                                     }
                                 }
-                            }
-                            
-                            if (working.isNotEmpty()) {
-                                Spacer(modifier = Modifier.height(12.dp))
-                                Text(stringResource(com.doruk.fitprogress.R.string.working_sets), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Spacer(modifier = Modifier.height(4.dp))
-                                working.forEach { logWithDetails ->
-                                    val log = logWithDetails.setLog
-                                    val status = if (log.isSkipped) " (Skipped)" else if (!log.completed) " (Incomplete)" else ""
-                                    
-                                    val logColor = if (log.isSkipped) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
-                                    
-                                    val actualWeightStr = com.doruk.fitprogress.core.util.FormatUtils.formatDouble(log.actualWeight ?: log.targetWeight, com.doruk.fitprogress.core.util.FormatUtils.getAppLocale(androidx.compose.ui.platform.LocalContext.current))
-                                    Text("${stringResource(com.doruk.fitprogress.R.string.working_set_number).format(log.setNumber)}: ${log.actualReps ?: log.targetReps}/${log.targetReps} reps @ $actualWeightStr ${log.weightUnit}  RPE: ${log.rpe ?: "N/A"}$status", style = MaterialTheme.typography.bodyMedium, color = logColor)
-                                    
-                                    val rest = logWithDetails.restTimerLog
-                                    if (rest != null) {
-                                        Text(stringResource(com.doruk.fitprogress.R.string.workout_detail_rest_format).format(rest.actualRestSeconds, rest.plannedRestSeconds), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    }
-                                    
-                                    val advice = logWithDetails.setAdvice
-                                    if (advice != null) {
-                                        Text(stringResource(com.doruk.fitprogress.R.string.workout_detail_advice_format).format(advice.adviceText), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
-                                    }
-                                    
-                                    if (!log.note.isNullOrBlank()) {
-                                        Row(modifier = Modifier.padding(top = 4.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                                            Icon(
-                                                imageVector = androidx.compose.material.icons.Icons.Default.Edit,
-                                                contentDescription = "Set Note",
-                                                tint = MaterialTheme.colorScheme.primary,
-                                                modifier = Modifier.size(14.dp)
-                                            )
-                                            Spacer(modifier = Modifier.width(4.dp))
-                                            Text("${log.note}", style = MaterialTheme.typography.bodySmall, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic, color = MaterialTheme.colorScheme.onSurface)
-                                        }
-                                    }
-                                }
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = stringResource(R.string.generate_summary),
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1
+                                )
                             }
                         }
                     }
                 }
+            }
 
+            // 2. AI Workout Summary Card (if generated)
+            if (aiSummary != null) {
                 item {
-                    if (d.cardioSession != null) {
-                        Card(
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                    StandardSurfaceCard(borderColor = AthleticEmerald.copy(alpha = 0.45f)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Text(stringResource(com.doruk.fitprogress.R.string.cardio_session_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(stringResource(com.doruk.fitprogress.R.string.cardio_type_format).format(d.cardioSession.cardioType), style = MaterialTheme.typography.bodyMedium)
-                                Text(stringResource(com.doruk.fitprogress.R.string.cardio_duration_format).format(d.cardioSession.durationMinutes), style = MaterialTheme.typography.bodyMedium)
-                            }
+                            Icon(
+                                imageVector = Icons.Default.AutoAwesome,
+                                contentDescription = null,
+                                tint = AthleticEmerald,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Text(
+                                text = stringResource(R.string.ai_workout_summary),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = AthleticEmerald
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Text(
+                            text = aiSummary!!,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = stringResource(R.string.ai_summary_disclaimer),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
+            // 3. Exercises List
+            val sortedExercises = detail.exercises.sortedBy { it.exerciseSession.orderIndex }
+            items(
+                items = sortedExercises,
+                key = { it.exerciseSession.id }
+            ) { ex ->
+                ExerciseDetailTelemetryCard(ex, locale)
+            }
+
+            // 4. Cardio Session Summary
+            if (detail.cardioSession != null) {
+                item {
+                    val c = detail.cardioSession
+                    StandardSurfaceCard(borderColor = AthleticEmerald.copy(alpha = 0.4f)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = stringResource(R.string.cardio_session_title),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = AthleticEmerald
+                            )
+                            StatusPillBadge(
+                                text = stringResource(R.string.completed_label),
+                                type = BadgeType.SUCCESS
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = stringResource(R.string.cardio_type_format, c.cardioType),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = stringResource(
+                                R.string.cardio_duration_format,
+                                "${c.durationMinutes}"
+                            ),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        if (!c.notes.isNullOrBlank()) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = "${stringResource(R.string.note_label)} ${c.notes}",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontStyle = FontStyle.Italic,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     }
                 }
@@ -320,3 +400,164 @@ fun WorkoutDetailScreen(
     }
 }
 
+@Composable
+fun ExerciseDetailTelemetryCard(
+    ex: WorkoutDetailExerciseDto,
+    locale: Locale
+) {
+    val warmupSets = ex.sets.filter { it.setLog.setType == "WARMUP" }.sortedBy { it.setLog.setNumber }
+    val workingSets = ex.sets.filter { it.setLog.setType != "WARMUP" }.sortedBy { it.setLog.setNumber }
+
+    StandardSurfaceCard {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = ex.exercise?.name ?: "Exercise",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f)
+            )
+            if (ex.exerciseSession.supersetGroupId != null) {
+                Spacer(modifier = Modifier.width(8.dp))
+                StatusPillBadge(
+                    text = stringResource(R.string.superset),
+                    type = BadgeType.AI
+                )
+            }
+        }
+
+        if (!ex.exerciseSession.note.isNullOrBlank()) {
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = "${stringResource(R.string.note_label)} ${ex.exerciseSession.note}",
+                style = MaterialTheme.typography.bodySmall,
+                fontStyle = FontStyle.Italic,
+                color = ElectricCobalt
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        if (warmupSets.isNotEmpty()) {
+            Text(
+                text = stringResource(R.string.warm_ups),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = TelemetryAmber
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            warmupSets.forEach { setDto ->
+                SetDetailTelemetryRow(setDto = setDto, isWarmup = true, locale = locale)
+            }
+            Spacer(modifier = Modifier.height(10.dp))
+        }
+
+        if (workingSets.isNotEmpty()) {
+            Text(
+                text = stringResource(R.string.workout_detail_working_sets),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = ElectricCobalt
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            workingSets.forEach { setDto ->
+                SetDetailTelemetryRow(setDto = setDto, isWarmup = false, locale = locale)
+            }
+        }
+    }
+}
+
+@Composable
+fun SetDetailTelemetryRow(
+    setDto: SetLogWithDetailsDto,
+    isWarmup: Boolean,
+    locale: Locale
+) {
+    val set = setDto.setLog
+    val restLog = setDto.restTimerLog
+    val advice = setDto.setAdvice
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(10.dp))
+            .padding(horizontal = 12.dp, vertical = 8.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            StatusPillBadge(
+                text = if (isWarmup) "W${set.setNumber}" else "S${set.setNumber}",
+                type = if (isWarmup) BadgeType.WARNING else BadgeType.INFO
+            )
+
+            if (set.isSkipped) {
+                StatusPillBadge(
+                    text = stringResource(R.string.workout_detail_skipped),
+                    type = BadgeType.DANGER
+                )
+            } else if (set.completed) {
+                val w = if (set.actualWeight != null) {
+                    "${FormatUtils.formatDouble(set.actualWeight, locale, 1)} ${set.weightUnit}"
+                } else {
+                    "BW"
+                }
+                val r = "${set.actualReps ?: 0} ${stringResource(R.string.workout_detail_reps)}"
+                val rpe = if (set.rpe != null) "@ RPE ${FormatUtils.formatDouble(set.rpe, locale, 1)}" else ""
+                Text(
+                    text = "$w × $r $rpe".trim(),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = AthleticEmerald,
+                    fontWeight = FontWeight.Bold
+                )
+            } else {
+                Text(
+                    text = "Incomplete",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        if (restLog != null) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = stringResource(
+                    R.string.workout_detail_rest_format,
+                    restLog.actualRestSeconds ?: 0,
+                    restLog.plannedRestSeconds
+                ).trim(),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        if (advice != null) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = stringResource(R.string.workout_detail_advice_format, advice.adviceText).trim(),
+                style = MaterialTheme.typography.labelSmall,
+                color = ElectricCobalt
+            )
+        }
+
+        if (!set.note.isNullOrBlank()) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "${stringResource(R.string.note_label)} ${set.note}",
+                style = MaterialTheme.typography.labelSmall,
+                fontStyle = FontStyle.Italic,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}

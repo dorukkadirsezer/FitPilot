@@ -1,41 +1,47 @@
 package com.doruk.fitprogress.feature.settings
 
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.core.os.LocaleListCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
+import com.doruk.fitprogress.R
 import com.doruk.fitprogress.core.datastore.AiSettingsDataStore
+import com.doruk.fitprogress.core.datastore.WorkoutSettingsDataStore
+import com.doruk.fitprogress.core.domain.model.ThemeMode
 import com.doruk.fitprogress.core.ui.components.AiActionButton
+import com.doruk.fitprogress.core.ui.components.BadgeType
 import com.doruk.fitprogress.core.ui.components.GymFlowTextField
-import com.doruk.fitprogress.theme.ElectricCyan
-import com.doruk.fitprogress.theme.VividViolet
+import com.doruk.fitprogress.core.ui.components.StandardSurfaceCard
+import com.doruk.fitprogress.core.ui.components.StatusPillBadge
+import com.doruk.fitprogress.theme.AthleticEmerald
+import com.doruk.fitprogress.theme.ElectricCobalt
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-
-import com.doruk.fitprogress.core.datastore.WorkoutSettingsDataStore
-import com.doruk.fitprogress.core.domain.model.ThemeMode
-import androidx.compose.ui.res.stringResource
-import com.doruk.fitprogress.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,113 +56,149 @@ fun AiSettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.smart_settings), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
+                title = {
+                    Text(
+                        text = stringResource(R.string.smart_settings),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.back),
+                            tint = MaterialTheme.colorScheme.onBackground
+                        )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
             )
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp)
+                .padding(horizontal = 16.dp, vertical = 8.dp)
                 .imePadding()
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = stringResource(R.string.app_theme),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
+            // 1. Appearance & Language Card (Zero-Shadow + 1.dp Hairline)
+            StandardSurfaceCard {
+                Text(
+                    text = stringResource(R.string.app_theme),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    val themeOptions = listOf(
+                        ThemeMode.LIGHT to stringResource(R.string.light),
+                        ThemeMode.DARK to stringResource(R.string.dark),
+                        ThemeMode.SYSTEM_DEFAULT to stringResource(R.string.system_default)
                     )
-                    Spacer(Modifier.height(16.dp))
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        val themeOptions = listOf(
-                            ThemeMode.LIGHT to stringResource(R.string.light),
-                            ThemeMode.DARK to stringResource(R.string.dark),
-                            ThemeMode.SYSTEM_DEFAULT to stringResource(R.string.system_default)
-                        )
-                        themeOptions.forEach { (mode, label) ->
-                            val isSelected = state.themeMode == mode
-                            Button(
-                                onClick = { viewModel.updateThemeMode(mode) },
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                                    contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-                                ),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(label)
-                            }
+                    themeOptions.forEach { (mode, label) ->
+                        val isSelected = state.themeMode == mode
+                        Button(
+                            onClick = { viewModel.updateThemeMode(mode) },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(42.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                            ),
+                            border = if (isSelected) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                            contentPadding = PaddingValues(horizontal = 6.dp)
+                        ) {
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1
+                            )
                         }
                     }
-                    Spacer(Modifier.height(24.dp))
-                    Text(
-                        text = stringResource(R.string.language),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
+                }
+
+                Spacer(Modifier.height(20.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                Spacer(Modifier.height(16.dp))
+
+                Text(
+                    text = stringResource(R.string.language),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    val currentLocale = AppCompatDelegate.getApplicationLocales()
+                        .toLanguageTags()
+                        .substringBefore("-")
+                    val langOptions = listOf(
+                        "" to stringResource(R.string.system_default),
+                        "en" to stringResource(R.string.english),
+                        "tr" to stringResource(R.string.turkish)
                     )
-                    Spacer(Modifier.height(16.dp))
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        val currentLocale = androidx.appcompat.app.AppCompatDelegate.getApplicationLocales().toLanguageTags().substringBefore("-")
-                        val langOptions = listOf(
-                            "" to stringResource(R.string.system_default),
-                            "en" to stringResource(R.string.english),
-                            "tr" to stringResource(R.string.turkish)
-                        )
-                        langOptions.forEach { (langTag, label) ->
-                            val isSelected = (currentLocale.isEmpty() && langTag.isEmpty()) || (currentLocale == langTag)
-                            Button(
-                                onClick = { 
-                                    androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(
-                                        androidx.core.os.LocaleListCompat.forLanguageTags(langTag)
-                                    ) 
-                                },
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                                    contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-                                ),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(label)
-                            }
+                    langOptions.forEach { (langTag, label) ->
+                        val isSelected = (currentLocale.isEmpty() && langTag.isEmpty()) || (currentLocale == langTag)
+                        Button(
+                            onClick = {
+                                AppCompatDelegate.setApplicationLocales(
+                                    LocaleListCompat.forLanguageTags(langTag)
+                                )
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(42.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                            ),
+                            border = if (isSelected) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                            contentPadding = PaddingValues(horizontal = 6.dp)
+                        ) {
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1
+                            )
                         }
                     }
                 }
             }
 
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            // 2. AI Disclaimer Banner Card
+            StandardSurfaceCard(
+                borderColor = MaterialTheme.colorScheme.error.copy(alpha = 0.40f),
+                containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.28f)
             ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Default.Info,
                         contentDescription = "Warning",
                         tint = MaterialTheme.colorScheme.error
                     )
-                    Spacer(Modifier.width(16.dp))
+                    Spacer(Modifier.width(12.dp))
                     Text(
                         text = stringResource(R.string.ai_disclaimer),
                         style = MaterialTheme.typography.bodySmall,
@@ -165,101 +207,118 @@ fun AiSettingsScreen(
                 }
             }
 
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = stringResource(R.string.enable_smart_features),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.secondary
-                            )
-                            Spacer(Modifier.height(4.dp))
-                            Text(
-                                text = stringResource(R.string.unlock_smart_features),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Switch(
-                            checked = state.isAiEnabled,
-                            onCheckedChange = { viewModel.toggleAiEnabled(it) },
-                            colors = SwitchDefaults.colors(checkedThumbColor = MaterialTheme.colorScheme.secondary, checkedTrackColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f))
+            // 3. Smart Features Master Switch Card
+            StandardSurfaceCard {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.enable_smart_features),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = ElectricCobalt
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = stringResource(R.string.unlock_smart_features),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
+                    Switch(
+                        checked = state.isAiEnabled,
+                        onCheckedChange = { viewModel.toggleAiEnabled(it) },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = AthleticEmerald,
+                            checkedTrackColor = AthleticEmerald.copy(alpha = 0.35f)
+                        )
+                    )
                 }
             }
 
+            // 4. Encrypted Gemini API Key Vault Card
             if (state.isAiEnabled) {
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
+                StandardSurfaceCard(borderColor = ElectricCobalt.copy(alpha = 0.35f)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Text(
                             text = stringResource(R.string.gemini_api_key),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            text = stringResource(R.string.api_key_stored_locally),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        StatusPillBadge(
+                            text = if (state.apiKey.isNotBlank()) "CONFIGURED" else "EMPTY",
+                            type = if (state.apiKey.isNotBlank()) BadgeType.SUCCESS else BadgeType.WARNING
                         )
-                        
-                        Spacer(Modifier.height(16.dp))
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(R.string.api_key_stored_locally),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
 
-                        GymFlowTextField(
-                            value = tempApiKey,
-                            onValueChange = { tempApiKey = it },
-                            label = stringResource(R.string.api_key),
-                            modifier = Modifier.fillMaxWidth(),
-                            visualTransformation = if (apiKeyVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
-                        )
-                        
-                        Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(14.dp))
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            TextButton(onClick = { apiKeyVisible = !apiKeyVisible }) {
-                                Text(if (apiKeyVisible) stringResource(R.string.hide_key) else stringResource(R.string.show_key), color = MaterialTheme.colorScheme.primary)
-                            }
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                TextButton(onClick = { 
+                    GymFlowTextField(
+                        value = tempApiKey,
+                        onValueChange = { tempApiKey = it },
+                        label = stringResource(R.string.api_key),
+                        modifier = Modifier.fillMaxWidth(),
+                        visualTransformation = if (apiKeyVisible) {
+                            VisualTransformation.None
+                        } else {
+                            PasswordVisualTransformation()
+                        },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
+                    )
+
+                    Spacer(Modifier.height(10.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        TextButton(onClick = { apiKeyVisible = !apiKeyVisible }) {
+                            Text(
+                                text = if (apiKeyVisible) stringResource(R.string.hide_key) else stringResource(R.string.show_key),
+                                color = ElectricCobalt,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            TextButton(
+                                onClick = {
                                     tempApiKey = ""
-                                    viewModel.clearApiKey() 
-                                }) {
-                                    Text(stringResource(R.string.clear), color = MaterialTheme.colorScheme.error)
+                                    viewModel.clearApiKey()
                                 }
-                                AiActionButton(
-                                    onClick = { viewModel.updateApiKey(tempApiKey) },
-                                    text = stringResource(R.string.save_key)
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.clear),
+                                    color = MaterialTheme.colorScheme.error,
+                                    fontWeight = FontWeight.SemiBold
                                 )
                             }
+                            AiActionButton(
+                                onClick = { viewModel.updateApiKey(tempApiKey) },
+                                text = stringResource(R.string.save_key)
+                            )
                         }
                     }
                 }
 
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-                ) {
+                // 5. Save AI Prompt Logs Toggle Card
+                StandardSurfaceCard {
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
@@ -280,11 +339,16 @@ fun AiSettingsScreen(
                         Switch(
                             checked = state.saveAiLogs,
                             onCheckedChange = { viewModel.toggleSaveLogs(it) },
-                            colors = SwitchDefaults.colors(checkedThumbColor = MaterialTheme.colorScheme.secondary, checkedTrackColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f))
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = AthleticEmerald,
+                                checkedTrackColor = AthleticEmerald.copy(alpha = 0.35f)
+                            )
                         )
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
@@ -324,7 +388,7 @@ class AiSettingsViewModel @Inject constructor(
     fun toggleSaveLogs(save: Boolean) {
         viewModelScope.launch { dataStore.setSaveAiLogs(save) }
     }
-    
+
     fun updateThemeMode(mode: ThemeMode) {
         viewModelScope.launch { workoutSettingsDataStore.setThemeMode(mode) }
     }
