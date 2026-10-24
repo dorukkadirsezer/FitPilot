@@ -56,6 +56,10 @@ fun DashboardScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
+    LaunchedEffect(Unit) {
+        viewModel.refresh()
+    }
+
     LaunchedEffect(
         uiState.importSuccessMessage,
         uiState.importError,
@@ -119,6 +123,7 @@ fun DashboardScreen(
                 )
             )
         },
+        contentWindowInsets = WindowInsets.systemBars,
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         if (uiState.isLoading) {
@@ -230,6 +235,11 @@ fun DashboardScreen(
                         onCardClick = { onTemplateClick(template.id) },
                         onStartClick = { onNavigateToCoaching(template.id) }
                     )
+                }
+
+                // 7. Bottom Edge-to-Edge Navigation Bar Inset Spacer
+                item {
+                    Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
                 }
             }
         }

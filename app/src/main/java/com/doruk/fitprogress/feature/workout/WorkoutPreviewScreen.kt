@@ -72,7 +72,9 @@ fun WorkoutPreviewScreen(
                     color = MaterialTheme.colorScheme.background,
                     tonalElevation = 0.dp,
                     shadowElevation = 0.dp,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .navigationBarsPadding()
                 ) {
                     Column {
                         HorizontalDivider(

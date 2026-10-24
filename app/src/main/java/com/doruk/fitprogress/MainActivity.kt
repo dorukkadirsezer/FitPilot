@@ -1,26 +1,27 @@
 package com.doruk.fitprogress
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.core.view.WindowCompat
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import androidx.navigation.NavType
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.runtime.getValue
 import com.doruk.fitprogress.feature.dashboard.DashboardScreen
 import com.doruk.fitprogress.theme.GymFlowAITheme
 import dagger.hilt.android.AndroidEntryPoint
-import androidx.appcompat.app.AppCompatActivity
-import androidx.hilt.navigation.compose.hiltViewModel
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
@@ -29,7 +30,10 @@ class MainActivity : AppCompatActivity() {
         if (savedInstanceState != null) {
             overridePendingTransition(0, 0)
         }
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+
         setContent {
             val mainViewModel: MainViewModel = hiltViewModel()
             val themeMode by mainViewModel.themeMode.collectAsStateWithLifecycle()
@@ -49,9 +53,9 @@ class MainActivity : AppCompatActivity() {
 @Composable
 fun GymFlowApp() {
     val navController = rememberNavController()
-    
+
     NavHost(
-        navController = navController, 
+        navController = navController,
         startDestination = "dashboard",
         modifier = Modifier.background(MaterialTheme.colorScheme.background)
     ) {
@@ -85,7 +89,7 @@ fun GymFlowApp() {
                 }
             )
         }
-        
+
         composable("workout_preview/{templateId}") { backStackEntry ->
             val templateId = backStackEntry.arguments?.getString("templateId") ?: return@composable
             com.doruk.fitprogress.feature.workout.WorkoutPreviewScreen(
@@ -94,12 +98,11 @@ fun GymFlowApp() {
                 onStartWorkoutClick = { navController.navigate("coaching/$templateId") }
             )
         }
-        
+
         composable("coaching/{templateId}") { backStackEntry ->
-            // The ViewModel will extract the templateId from SavedStateHandle
             com.doruk.fitprogress.feature.coaching.CoachingScreenHost(
                 onNavigateToActiveWorkout = { recId, planId ->
-                    val route = "active_workout/${backStackEntry.arguments?.getString("templateId")}?recId=$recId" + 
+                    val route = "active_workout/${backStackEntry.arguments?.getString("templateId")}?recId=$recId" +
                         (if (planId != null) "&planId=$planId" else "")
                     navController.navigate(route) {
                         popUpTo("dashboard") { inclusive = false }
@@ -117,7 +120,7 @@ fun GymFlowApp() {
                 navArgument("recId") { nullable = true; defaultValue = null; type = NavType.StringType },
                 navArgument("planId") { nullable = true; defaultValue = null; type = NavType.StringType }
             )
-        ) { backStackEntry ->
+        ) {
             com.doruk.fitprogress.feature.workout.ActiveWorkoutScreen(
                 onNavigateBack = { navController.popBackStack("dashboard", false) }
             )
@@ -175,20 +178,18 @@ fun GymFlowApp() {
             )
         }
 
-        // Phase 8A: Analytics
         composable("analytics_dashboard") {
             com.doruk.fitprogress.feature.analytics.AnalyticsDashboardScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }
-        
+
         composable("body_metrics") {
             com.doruk.fitprogress.feature.analytics.BodyMetricsScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }
 
-        // Phase 8B: AI Integrations
         composable("ai_settings") {
             com.doruk.fitprogress.feature.settings.AiSettingsScreen(
                 onNavigateBack = { navController.popBackStack() }
@@ -221,7 +222,7 @@ fun GymFlowApp() {
             arguments = listOf(
                 navArgument("sessionId") { type = NavType.StringType }
             )
-        ) { backStackEntry ->
+        ) {
             com.doruk.fitprogress.feature.history.WorkoutDetailScreen(
                 onNavigateBack = { navController.popBackStack() }
             )

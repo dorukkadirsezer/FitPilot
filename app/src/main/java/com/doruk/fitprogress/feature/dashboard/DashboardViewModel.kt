@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -32,8 +33,7 @@ class DashboardViewModel @Inject constructor(
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
     init {
-        loadTemplates()
-        observeFinishedWorkouts()
+        observeDashboardStreams()
         loadAnalyticsSummary()
     }
 
@@ -41,33 +41,25 @@ class DashboardViewModel @Inject constructor(
         loadAnalyticsSummary()
     }
 
-    private fun loadTemplates() {
+    private fun observeDashboardStreams() {
         viewModelScope.launch {
-            workoutDao.getAllTemplates()
+            combine(
+                workoutDao.getAllTemplates(),
+                workoutDao.getWorkoutHistoryList(),
+                workoutDao.getCompletedWorkoutsCountFlow()
+            ) { templates, historyList, totalCount ->
+                Triple(templates, historyList, totalCount)
+            }
                 .catch { _uiState.update { state -> state.copy(isLoading = false) } }
-                .collect { templates ->
+                .collect { (templates, historyList, totalCount) ->
                     runCatching {
+                        val effectiveCount = maxOf(historyList.size, totalCount)
                         _uiState.update { state ->
                             state.copy(
                                 templates = templates,
+                                completedWorkoutsCount = effectiveCount,
+                                recentSessions = historyList.map { it.session }.take(3),
                                 isLoading = false
-                            )
-                        }
-                    }
-                }
-        }
-    }
-
-    private fun observeFinishedWorkouts() {
-        viewModelScope.launch {
-            workoutDao.getAllFinishedWorkoutSessions()
-                .catch { /* Prevent stream cancellation on DB error */ }
-                .collect { sessions ->
-                    runCatching {
-                        _uiState.update { state ->
-                            state.copy(
-                                completedWorkoutsCount = sessions.size,
-                                recentSessions = sessions.take(3)
                             )
                         }
                         loadAnalyticsSummary()
@@ -82,7 +74,15 @@ class DashboardViewModel @Inject constructor(
                 val todayIso = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
                 calculateAnalyticsUseCase.getDashboardSummary(todayIso)
             }.onSuccess { summary ->
-                _uiState.update { state -> state.copy(analyticsSummary = summary) }
+                _uiState.update { state ->
+                    state.copy(
+                        analyticsSummary = summary,
+                        completedWorkoutsCount = maxOf(
+                            state.completedWorkoutsCount,
+                            summary.workoutSummary.workoutsCompleted
+                        )
+                    )
+                }
             }
         }
     }
@@ -102,7 +102,7 @@ class DashboardViewModel @Inject constructor(
             } else {
                 _uiState.update { state ->
                     state.copy(
-                        importError = result.exceptionOrNull()?.message ?: "Failed to import JSON plan",
+                        importError = result.exceptionOrNull()?.message ?: "Plan içe aktarılamadı",
                         importSuccessMessage = null
                     )
                 }
@@ -132,13 +132,13 @@ class DashboardViewModel @Inject constructor(
                 _uiState.update { state ->
                     state.copy(
                         exportError = null,
-                        exportSuccessMessage = "Program copied to clipboard!"
+                        exportSuccessMessage = "Program panoya kopyalandı!"
                     )
                 }
             } else {
                 _uiState.update { state ->
                     state.copy(
-                        exportError = result.exceptionOrNull()?.message ?: "Failed to export program",
+                        exportError = result.exceptionOrNull()?.message ?: "Program dışa aktarılamadı",
                         exportSuccessMessage = null
                     )
                 }

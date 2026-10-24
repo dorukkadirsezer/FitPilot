@@ -73,6 +73,7 @@ object LocalizationUtils {
             desc == "DESC_TPL_B" || desc.contains("Strength and Core", ignoreCase = true) -> stringResource(R.string.desc_tpl_b)
             desc == "DESC_TPL_C" || desc.contains("Volume and Detail", ignoreCase = true) -> stringResource(R.string.desc_tpl_c)
             desc == "DESC_TPL_D" || desc.contains("Machine-Focused Volume", ignoreCase = true) -> stringResource(R.string.desc_tpl_d)
+            desc.equals("AI Coach Program", ignoreCase = true) -> stringResource(R.string.ai_coach_program_focus)
             else -> desc
         }
     }

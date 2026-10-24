@@ -10,7 +10,7 @@
     <string name="body">Vücut</string>
     <string name="nutrition_tracking">Beslenme Takibi</string>
     <string name="view_trends">Trendleri Gör</string>
-    <string name="no_data">Veri yok</string>
+    <string name="no_data">Veri Yok</string>
     <string name="completed">tamamlandı</string>
     <string name="start">Başla</string>
 
@@ -25,7 +25,7 @@
 
     <string name="ai_disclaimer">Yapay zeka çıktıları tahminidir ve manuel olarak incelenmelidir. Bu uygulama tıbbi, beslenme veya profesyonel sağlık tavsiyesi sağlamaz.</string>
     <string name="enable_smart_features">Akıllı Özellikleri Etkinleştir</string>
-    <string name="unlock_smart_features">Akıllı yemek tarama ve antrenman içgörülerini kilidini açın.</string>
+    <string name="unlock_smart_features">Akıllı yemek tarama ve antrenman içgörülerini etkinleştirin.</string>
 
     <string name="gemini_api_key">Gemini API Anahtarı (Yerel Geliştirici)</string>
     <string name="api_key_stored_locally">Yerel olarak EncryptedSharedPreferences içinde saklanır.</string>
@@ -75,7 +75,7 @@
     <string name="log_rest_walk_day">Dinlenme / Yürüyüş Gününü Kaydet</string>
 
     <string name="timer_settings">Zamanlayıcı Ayarları</string>
-    <string name="enable_master_sound">Titreşimi Etkinleştir</string>
+    <string name="enable_master_sound">Ana Sesi Etkinleştir</string>
     <string name="warning_tone_30s">30 Saniye Uyarı Tonu</string>
     <string name="timer_finished_tone">Zamanlayıcı Bitiş Tonu</string>
     <string name="done">Tamam</string>
@@ -145,7 +145,7 @@
     <string name="reps">tekrar</string>
     <string name="target">hedef</string>
     <string name="advice">Tavsiye</string>
-    <string name="not_available">Mevcut Değil</string>
+    <string name="not_available">—</string>
 
     <string name="enum_pre_workout">Antrenman Öncesi</string>
     <string name="enum_post_workout">Antrenman Sonrası</string>
@@ -243,6 +243,7 @@
     <string name="desc_tpl_b">Güç ve Merkez Bölgesi</string>
     <string name="desc_tpl_c">Hacim ve Detay</string>
     <string name="desc_tpl_d">Makine Odaklı Hacim</string>
+    <string name="ai_coach_program_focus">AI Koç Programı</string>
     
     <string name="warmup_light_walking">5 dakika hafif yürüyüş</string>
     <string name="warmup_elliptical_light">5 dakika hafif eliptik</string>

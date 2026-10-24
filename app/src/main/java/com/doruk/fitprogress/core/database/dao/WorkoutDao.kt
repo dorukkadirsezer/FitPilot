@@ -100,8 +100,6 @@ interface WorkoutDao {
     @Query("SELECT * FROM workout_exercise_sessions WHERE workoutSessionId = :sessionId")
     suspend fun getExerciseSessionsForWorkout(sessionId: String): List<WorkoutExerciseSessionEntity>
 
-
-
     @Query("SELECT * FROM set_logs WHERE workoutExerciseSessionId IN (:exerciseSessionIds)")
     suspend fun getSetLogsForExerciseSessions(exerciseSessionIds: List<String>): List<SetLogEntity>
 
@@ -120,7 +118,7 @@ interface WorkoutDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTimeLimitedWorkoutPlanExercises(exercises: List<TimeLimitedWorkoutPlanExerciseEntity>)
-    
+
     @Query("SELECT * FROM readiness_check_ins WHERE id = :id LIMIT 1")
     suspend fun getReadinessCheckIn(id: String): ReadinessCheckInEntity?
 
@@ -150,8 +148,28 @@ interface WorkoutDao {
     suspend fun insertCardioSession(session: CardioSessionEntity)
 
     // Phase 7A Additions
-    @Query("SELECT * FROM workout_sessions WHERE finishedAt IS NOT NULL ORDER BY COALESCE(finishedAt, startedAt) DESC")
+    @Query("""
+        SELECT * FROM workout_sessions 
+        WHERE finishedAt IS NOT NULL 
+           OR EXISTS (
+               SELECT 1 FROM set_logs sl 
+               INNER JOIN workout_exercise_sessions wes ON sl.workoutExerciseSessionId = wes.id 
+               WHERE wes.workoutSessionId = workout_sessions.id AND sl.completed = 1
+           )
+        ORDER BY COALESCE(finishedAt, startedAt) DESC
+    """)
     fun getAllFinishedWorkoutSessions(): Flow<List<WorkoutSessionEntity>>
+
+    @Query("""
+        SELECT COUNT(*) FROM workout_sessions 
+        WHERE finishedAt IS NOT NULL 
+           OR EXISTS (
+               SELECT 1 FROM set_logs sl 
+               INNER JOIN workout_exercise_sessions wes ON sl.workoutExerciseSessionId = wes.id 
+               WHERE wes.workoutSessionId = workout_sessions.id AND sl.completed = 1
+           )
+    """)
+    fun getCompletedWorkoutsCountFlow(): Flow<Int>
 
     @Query("SELECT * FROM workout_sessions WHERE id = :sessionId LIMIT 1")
     suspend fun getWorkoutSessionById(sessionId: String): WorkoutSessionEntity?
@@ -209,6 +227,11 @@ interface WorkoutDao {
         FROM workout_sessions ws
         LEFT JOIN workout_templates wt ON ws.templateId = wt.id
         WHERE ws.finishedAt IS NOT NULL
+           OR EXISTS (
+               SELECT 1 FROM set_logs sl 
+               INNER JOIN workout_exercise_sessions wes ON sl.workoutExerciseSessionId = wes.id 
+               WHERE wes.workoutSessionId = ws.id AND sl.completed = 1
+           )
         ORDER BY COALESCE(ws.finishedAt, ws.startedAt) DESC
     """)
     fun getWorkoutHistoryList(): Flow<List<WorkoutHistoryListItemDto>>
@@ -239,15 +262,15 @@ interface WorkoutDao {
     suspend fun getExerciseHistorySessions(exerciseId: String, limit: Int): List<ExerciseHistorySessionDto>
 
     // Phase 8A Analytics Additions
-    @Query("SELECT * FROM workout_sessions WHERE finishedAt BETWEEN :startTimestamp AND :endTimestamp")
+    @Query("SELECT * FROM workout_sessions WHERE COALESCE(finishedAt, startedAt) BETWEEN :startTimestamp AND :endTimestamp AND (finishedAt IS NOT NULL OR EXISTS (SELECT 1 FROM set_logs sl INNER JOIN workout_exercise_sessions wes ON sl.workoutExerciseSessionId = wes.id WHERE wes.workoutSessionId = workout_sessions.id AND sl.completed = 1))")
     suspend fun getWorkoutSessionsBetweenDates(startTimestamp: Long, endTimestamp: Long): List<WorkoutSessionEntity>
 
-    @Query("SELECT sl.* FROM set_logs sl INNER JOIN workout_exercise_sessions wes ON sl.workoutExerciseSessionId = wes.id INNER JOIN workout_sessions ws ON wes.workoutSessionId = ws.id WHERE ws.finishedAt BETWEEN :startTimestamp AND :endTimestamp")
+    @Query("SELECT sl.* FROM set_logs sl INNER JOIN workout_exercise_sessions wes ON sl.workoutExerciseSessionId = wes.id INNER JOIN workout_sessions ws ON wes.workoutSessionId = ws.id WHERE COALESCE(ws.finishedAt, ws.startedAt) BETWEEN :startTimestamp AND :endTimestamp")
     suspend fun getSetLogsBetweenDates(startTimestamp: Long, endTimestamp: Long): List<SetLogEntity>
 
     @Query("SELECT * FROM cardio_sessions WHERE date BETWEEN :startTimestamp AND :endTimestamp")
     suspend fun getCardioSessionsBetweenDates(startTimestamp: Long, endTimestamp: Long): List<CardioSessionEntity>
-    
+
     @Query("SELECT * FROM progression_suggestions WHERE createdAt BETWEEN :startTimestamp AND :endTimestamp")
     suspend fun getProgressionSuggestionsBetweenDates(startTimestamp: Long, endTimestamp: Long): List<ProgressionSuggestionEntity>
 }
