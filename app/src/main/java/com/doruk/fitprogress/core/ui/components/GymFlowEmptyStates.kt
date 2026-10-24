@@ -9,8 +9,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.doruk.fitprogress.R
 
 object GymFlowEmptyStates {
     @Composable
@@ -20,7 +22,7 @@ object GymFlowEmptyStates {
         actionButton: (@Composable () -> Unit)? = null
     ) {
         EmptyStateCard(
-            title = "No Data",
+            title = stringResource(R.string.empty_state_no_data),
             description = message,
             modifier = modifier,
             actionButton = actionButton
@@ -34,15 +36,16 @@ object GymFlowEmptyStates {
         onRetry: (() -> Unit)? = null,
         actionButton: (@Composable () -> Unit)? = null
     ) {
+        val retryText = stringResource(R.string.action_retry)
         EmptyStateCard(
-            title = "Error",
+            title = stringResource(R.string.empty_state_error),
             description = message,
             modifier = modifier,
             actionButton = actionButton ?: onRetry?.let {
                 {
-                    com.doruk.fitprogress.core.ui.components.PrimaryActionButton(
+                    PrimaryActionButton(
                         onClick = it,
-                        text = "Retry"
+                        text = retryText
                     )
                 }
             }

@@ -137,7 +137,8 @@ fun WorkoutPreviewScreen(
                     // Header Summary Card
                     item {
                         val subtitleLabel = if (currentDetails.template.dayCode.startsWith("PROGRAM_DAY_")) {
-                            "DAY ${currentDetails.template.dayCode.removePrefix("PROGRAM_DAY_")}"
+                            val dayNum = currentDetails.template.dayCode.removePrefix("PROGRAM_DAY_").toIntOrNull() ?: 1
+                            stringResource(R.string.day_number_format, dayNum).uppercase()
                         } else {
                             "${stringResource(R.string.day).uppercase()} ${currentDetails.template.dayCode}"
                         }
@@ -199,7 +200,7 @@ fun WorkoutPreviewScreen(
                                 color = MaterialTheme.colorScheme.onBackground
                             )
                             StatusPillBadge(
-                                text = "${sortedExercises.size} MOVEMENTS",
+                                text = stringResource(R.string.movements_count_format, sortedExercises.size),
                                 type = BadgeType.NEUTRAL
                             )
                         }

@@ -83,10 +83,18 @@ fun DashboardScreen(
     Scaffold(
         topBar = {
             TopAppBar(
+                navigationIcon = {
+                    FitPilotBrandLogo(
+                        modifier = Modifier.padding(start = 16.dp, end = 4.dp),
+                        size = 38.dp,
+                        showContainer = true
+                    )
+                },
                 title = {
                     FitPilotBrandLockup(
                         title = "FitPilot",
-                        badgeText = "BETA"
+                        badgeText = "BETA",
+                        showLogoIcon = false
                     )
                 },
                 actions = {
@@ -157,7 +165,7 @@ fun DashboardScreen(
 
                 // 4. Quick Telemetry Navigation Row (Analytics, Body Metrics, History)
                 item {
-                    val completedCount = uiState.analyticsSummary?.workoutSummary?.workoutsCompleted ?: 0
+                    val completedCount = uiState.completedWorkoutsCount
                     val latestWeight = uiState.analyticsSummary?.bodySummary?.latestWeight
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -206,7 +214,7 @@ fun DashboardScreen(
                             fontWeight = FontWeight.Bold
                         )
                         StatusPillBadge(
-                            text = "${uiState.templates.size} PLANS",
+                            text = stringResource(R.string.plans_count_format, uiState.templates.size),
                             type = BadgeType.INFO
                         )
                     }
@@ -264,20 +272,20 @@ private fun AiCoachSyncHubCard(
                 }
                 Column {
                     Text(
-                        text = "AI Coach Sync Hub",
+                        text = stringResource(R.string.ai_coach_sync_hub),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "Bidirectional JSON Macrocycle & Progression Pipeline",
+                        text = stringResource(R.string.ai_coach_sync_subtitle),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
             Spacer(modifier = Modifier.width(8.dp))
-            StatusPillBadge(text = "READY", type = BadgeType.AI)
+            StatusPillBadge(text = stringResource(R.string.status_ready), type = BadgeType.AI)
         }
 
         Spacer(modifier = Modifier.height(14.dp))
@@ -306,7 +314,7 @@ private fun AiCoachSyncHubCard(
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "Import Plan",
+                    text = stringResource(R.string.import_plan),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold
                 )
@@ -332,7 +340,7 @@ private fun AiCoachSyncHubCard(
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "Export Stats",
+                    text = stringResource(R.string.export_stats),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -379,7 +387,7 @@ private fun DashboardNutritionTelemetryCard(
             }
 
             StatusPillBadge(
-                text = "$avgCals kcal avg",
+                text = stringResource(R.string.kcal_avg_format, avgCals),
                 type = BadgeType.SUCCESS
             )
         }
@@ -481,7 +489,8 @@ fun DashboardTemplateCard(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     val badgeLabel = if (template.dayCode.startsWith("PROGRAM_DAY_")) {
-                        "DAY ${template.dayCode.removePrefix("PROGRAM_DAY_")}"
+                        val dayNum = template.dayCode.removePrefix("PROGRAM_DAY_").toIntOrNull() ?: 1
+                        stringResource(R.string.day_number_format, dayNum).uppercase()
                     } else {
                         "${stringResource(R.string.day).uppercase()} ${template.dayCode}"
                     }
@@ -491,7 +500,7 @@ fun DashboardTemplateCard(
                     )
                     if (template.isAiProgram) {
                         StatusPillBadge(
-                            text = "AI COACH",
+                            text = stringResource(R.string.ai_coach_badge),
                             type = BadgeType.SUCCESS
                         )
                     }

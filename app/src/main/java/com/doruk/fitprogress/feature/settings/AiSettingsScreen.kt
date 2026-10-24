@@ -254,7 +254,7 @@ fun AiSettingsScreen(
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         StatusPillBadge(
-                            text = if (state.apiKey.isNotBlank()) "CONFIGURED" else "EMPTY",
+                            text = if (state.apiKey.isNotBlank()) stringResource(R.string.status_configured) else stringResource(R.string.status_empty),
                             type = if (state.apiKey.isNotBlank()) BadgeType.SUCCESS else BadgeType.WARNING
                         )
                     }

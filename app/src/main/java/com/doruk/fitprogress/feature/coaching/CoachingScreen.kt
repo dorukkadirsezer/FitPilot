@@ -97,12 +97,17 @@ fun ReadinessCheckInScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Available Time",
+                        text = stringResource(R.string.available_time),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
-                    val modeDisplay = if (state.availableTimeMode == "full") "60 MIN" else "${state.availableTimeMode} MIN"
+                    val modeDisplay = when (state.availableTimeMode) {
+                        "full" -> stringResource(R.string.time_option_60m).uppercase()
+                        "45" -> stringResource(R.string.time_option_45m).uppercase()
+                        "30" -> stringResource(R.string.time_option_30m).uppercase()
+                        else -> stringResource(R.string.time_option_60m).uppercase()
+                    }
                     StatusPillBadge(
                         text = modeDisplay,
                         type = BadgeType.INFO
@@ -114,9 +119,9 @@ fun ReadinessCheckInScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     val options = listOf(
-                        "full" to "60 min",
-                        "45" to "45 min",
-                        "30" to "30 min"
+                        "full" to stringResource(R.string.time_option_60m),
+                        "45" to stringResource(R.string.time_option_45m),
+                        "30" to stringResource(R.string.time_option_30m)
                     )
                     options.forEach { (modeKey, label) ->
                         val isSelected = state.availableTimeMode == modeKey
@@ -145,19 +150,19 @@ fun ReadinessCheckInScreen(
 
             // Readiness Telemetry Sliders Card
             StandardSurfaceCard {
-                SliderRow("Sleep Quality (1 = Poor, 5 = Great)", state.sleepQuality) {
+                SliderRow(stringResource(R.string.sleep_quality_label), state.sleepQuality) {
                     viewModel.updateCheckInField(CheckInField.SLEEP, it)
                 }
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant)
-                SliderRow("Energy Level (1 = Low, 5 = High)", state.energyLevel) {
+                SliderRow(stringResource(R.string.energy_level_label), state.energyLevel) {
                     viewModel.updateCheckInField(CheckInField.ENERGY, it)
                 }
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant)
-                SliderRow("Motivation (1 = Low, 5 = Pumped)", state.motivationLevel) {
+                SliderRow(stringResource(R.string.motivation_level_label), state.motivationLevel) {
                     viewModel.updateCheckInField(CheckInField.MOTIVATION, it)
                 }
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant)
-                SliderRow("Muscle Soreness (1 = None, 5 = Severe)", state.muscleSoreness) {
+                SliderRow(stringResource(R.string.muscle_soreness_label), state.muscleSoreness) {
                     viewModel.updateCheckInField(CheckInField.SORENESS, it)
                 }
             }
@@ -165,13 +170,13 @@ fun ReadinessCheckInScreen(
             // Joint & Recovery Sensitivity Card
             StandardSurfaceCard {
                 SensitivitySelectorRow(
-                    title = "Knee Sensitivity",
+                    title = stringResource(R.string.knee_sensitivity_label),
                     currentValue = state.kneeSensitivity,
                     onSelect = { viewModel.updateCheckInField(CheckInField.KNEE, it) }
                 )
                 HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = MaterialTheme.colorScheme.outlineVariant)
                 SensitivitySelectorRow(
-                    title = "Lower Back Discomfort",
+                    title = stringResource(R.string.lower_back_discomfort_label),
                     currentValue = state.backDiscomfort,
                     onSelect = { viewModel.updateCheckInField(CheckInField.BACK, it) }
                 )
@@ -182,7 +187,7 @@ fun ReadinessCheckInScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Previous Workout Felt Very Hard",
+                        text = stringResource(R.string.prev_workout_hard_label),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.Medium,
@@ -211,6 +216,11 @@ private fun SensitivitySelectorRow(
     currentValue: String,
     onSelect: (String) -> Unit
 ) {
+    val options = listOf(
+        "none" to stringResource(R.string.sensitivity_none),
+        "mild" to stringResource(R.string.sensitivity_mild),
+        "high" to stringResource(R.string.sensitivity_high)
+    )
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = title,
@@ -223,7 +233,7 @@ private fun SensitivitySelectorRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            listOf("none" to "None", "mild" to "Mild", "high" to "High").forEach { (key, label) ->
+            options.forEach { (key, label) ->
                 val isSelected = currentValue == key
                 Button(
                     onClick = { onSelect(key) },
@@ -363,8 +373,9 @@ fun SmartRecommendationScreen(
                     Spacer(modifier = Modifier.height(14.dp))
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     Spacer(modifier = Modifier.height(12.dp))
+                    val timeMinutes = state.availableTimeMode.toIntOrNull() ?: 45
                     StatusPillBadge(
-                        text = "TIME-LIMITED: ${state.availableTimeMode} MIN",
+                        text = stringResource(R.string.time_limited_badge_format, timeMinutes),
                         type = BadgeType.AI
                     )
                 }
@@ -412,7 +423,7 @@ fun SmartRecommendationScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
-                            text = "${stringResource(R.string.select_time_limited_instead)} (45m)",
+                            text = "${stringResource(R.string.select_time_limited_instead)} (${stringResource(R.string.minutes_short_format, 45)})",
                             color = ElectricCobalt,
                             fontWeight = FontWeight.SemiBold
                         )

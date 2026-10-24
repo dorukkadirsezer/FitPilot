@@ -185,7 +185,7 @@ fun BodyMetricsScreen(
                     color = MaterialTheme.colorScheme.onBackground
                 )
                 StatusPillBadge(
-                    text = "${uiState.metricsList.size} LOGS",
+                    text = stringResource(R.string.logs_count_format, uiState.metricsList.size),
                     type = BadgeType.NEUTRAL
                 )
             }

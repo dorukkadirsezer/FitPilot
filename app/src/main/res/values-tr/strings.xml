@@ -300,4 +300,58 @@
     <string name="change_7d">7g Değişim</string>
     <string name="waist">Bel</string>
 
+    <!-- Polish & Localization Keys -->
+    <string name="ai_coach_sync_hub">AI Koç Senkronizasyon Merkezi</string>
+    <string name="ai_coach_sync_subtitle">Özel antrenman planı içe aktarın veya AI analizi için istatistikleri dışa aktarın</string>
+    <string name="status_ready">HAZIR</string>
+    <string name="import_plan">Plan İçe Aktar</string>
+    <string name="export_stats">İstatistik Dışa Aktar</string>
+    <string name="plans_count_format">%1$d PLAN</string>
+    <string name="movements_count_format">%1$d HAREKET</string>
+    <string name="ai_coach_badge">AI KOÇ</string>
+    <string name="day_number_format">Gün %1$d</string>
+    <string name="kcal_avg_format">Ort. %1$d kcal</string>
+    <string name="available_time">Mevcut Süre</string>
+    <string name="minutes_short_format">%1$d dk</string>
+    <string name="time_option_60m">60+ dk</string>
+    <string name="time_option_45m">45 dk</string>
+    <string name="time_option_30m">30 dk</string>
+    <string name="sleep_quality_label">Uyku Kalitesi (1 = Kötü, 5 = Harika)</string>
+    <string name="energy_level_label">Enerji Seviyesi (1 = Düşük, 5 = Yüksek)</string>
+    <string name="motivation_level_label">Motivasyon (1 = Düşük, 5 = Yüksek)</string>
+    <string name="muscle_soreness_label">Kas Ağrısı / Hamlık (1 = Yok, 5 = Şiddetli)</string>
+    <string name="knee_sensitivity_label">Diz Hassasiyeti</string>
+    <string name="lower_back_discomfort_label">Bel Rahatsızlığı</string>
+    <string name="prev_workout_hard_label">Önceki Antrenman Zorlayıcı mıydı?</string>
+    <string name="sensitivity_none">Yok</string>
+    <string name="sensitivity_mild">Hafif</string>
+    <string name="sensitivity_high">Yüksek</string>
+    <string name="time_limited_badge_format">ZAMAN KISITLI (%1$d DK)</string>
+    <string name="empty_state_no_data">Veri Yok</string>
+    <string name="empty_state_error">Bir hata oluştu</string>
+    <string name="action_retry">Tekrar Dene</string>
+    <string name="workout_complete_title">Antrenman Tamamlandı!</string>
+    <string name="workout_complete_default_msg">Harika seans! İlerlemeniz başarıyla kaydedildi.</string>
+    <string name="unfinished_sets_title">Tamamlanmamış Setler</string>
+    <string name="unfinished_sets_message">Tamamlanmamış çalışma setleriniz var. Şimdi bitirmek bu setleri atlanmış olarak işaretleyecektir.</string>
+    <string name="finish_and_skip">Bitir ve Atla</string>
+    <string name="rest_after_superset_format">Süper set sonrası dinlenme: %1$d sn</string>
+    <string name="cardio_recommended_format">Önerilen: %1$d dk (%2$s)</string>
+    <string name="cardio_reason_format">Neden: %1$s</string>
+    <string name="shorten_cardio_5m">Kısalt (-5 dk)</string>
+    <string name="mark_completed_manually">Manuel Tamamlandı İşaretle</string>
+    <string name="dialog_resume">Devam Et</string>
+    <string name="superset_advice_format">%1$s: %2$s</string>
+    <string name="input_any">Tümü</string>
+    <string name="exercise_note_title">Egzersiz Notu</string>
+    <string name="set_note_title">Set Notu</string>
+    <string name="note_placeholder">Not ekle...</string>
+    <string name="action_save">Kaydet</string>
+    <string name="enable_vibration">Titreşimi Etkinleştir</string>
+    <string name="export_to_coach">Koça Aktar</string>
+    <string name="session_copied_toast">Antrenman verisi AI Koç için panoya kopyalandı</string>
+    <string name="status_incomplete">YARIM KALDI</string>
+    <string name="logs_count_format">%1$d KAYIT</string>
+    <string name="status_configured">YAPILANDIRILDI</string>
+    <string name="status_empty">BOŞ</string>
 </resources>

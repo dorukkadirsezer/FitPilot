@@ -3,6 +3,7 @@ package com.doruk.fitprogress.feature.dashboard
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.doruk.fitprogress.core.database.dao.WorkoutDao
+import com.doruk.fitprogress.core.database.entity.WorkoutSessionEntity
 import com.doruk.fitprogress.core.database.entity.WorkoutTemplateEntity
 import com.doruk.fitprogress.core.domain.usecase.AnalyticsDashboardSummary
 import com.doruk.fitprogress.core.domain.usecase.CalculateAnalyticsUseCase
@@ -12,6 +13,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -30,6 +33,7 @@ class DashboardViewModel @Inject constructor(
 
     init {
         loadTemplates()
+        observeFinishedWorkouts()
         loadAnalyticsSummary()
     }
 
@@ -39,23 +43,46 @@ class DashboardViewModel @Inject constructor(
 
     private fun loadTemplates() {
         viewModelScope.launch {
-            workoutDao.getAllTemplates().collect { templates ->
-                _uiState.value = _uiState.value.copy(
-                    templates = templates,
-                    isLoading = false
-                )
-            }
+            workoutDao.getAllTemplates()
+                .catch { _uiState.update { state -> state.copy(isLoading = false) } }
+                .collect { templates ->
+                    runCatching {
+                        _uiState.update { state ->
+                            state.copy(
+                                templates = templates,
+                                isLoading = false
+                            )
+                        }
+                    }
+                }
+        }
+    }
+
+    private fun observeFinishedWorkouts() {
+        viewModelScope.launch {
+            workoutDao.getAllFinishedWorkoutSessions()
+                .catch { /* Prevent stream cancellation on DB error */ }
+                .collect { sessions ->
+                    runCatching {
+                        _uiState.update { state ->
+                            state.copy(
+                                completedWorkoutsCount = sessions.size,
+                                recentSessions = sessions.take(3)
+                            )
+                        }
+                        loadAnalyticsSummary()
+                    }
+                }
         }
     }
 
     private fun loadAnalyticsSummary() {
         viewModelScope.launch {
-            try {
+            runCatching {
                 val todayIso = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
-                val summary = calculateAnalyticsUseCase.getDashboardSummary(todayIso)
-                _uiState.value = _uiState.value.copy(analyticsSummary = summary)
-            } catch (e: Exception) {
-                // Ignore for MVP dashboard or log it
+                calculateAnalyticsUseCase.getDashboardSummary(todayIso)
+            }.onSuccess { summary ->
+                _uiState.update { state -> state.copy(analyticsSummary = summary) }
             }
         }
     }
@@ -65,41 +92,56 @@ class DashboardViewModel @Inject constructor(
             val result = syncCoachPlanUseCase()
             if (result.isSuccess) {
                 val successMessage = result.getOrNull()!!
-                _uiState.value = _uiState.value.copy(
-                    importError = null,
-                    importSuccessMessage = successMessage,
-                    importedSessionId = null
-                )
+                _uiState.update { state ->
+                    state.copy(
+                        importError = null,
+                        importSuccessMessage = successMessage,
+                        importedSessionId = null
+                    )
+                }
             } else {
-                _uiState.value = _uiState.value.copy(
-                    importError = result.exceptionOrNull()?.message ?: "Failed to import JSON plan",
-                    importSuccessMessage = null
-                )
+                _uiState.update { state ->
+                    state.copy(
+                        importError = result.exceptionOrNull()?.message ?: "Failed to import JSON plan",
+                        importSuccessMessage = null
+                    )
+                }
             }
         }
     }
 
     fun clearImportMessages() {
-        _uiState.value = _uiState.value.copy(importError = null, importSuccessMessage = null, exportSuccessMessage = null, exportError = null)
+        _uiState.update { state ->
+            state.copy(
+                importError = null,
+                importSuccessMessage = null,
+                exportSuccessMessage = null,
+                exportError = null
+            )
+        }
     }
 
     fun clearImportedSessionId() {
-        _uiState.value = _uiState.value.copy(importedSessionId = null)
+        _uiState.update { state -> state.copy(importedSessionId = null) }
     }
 
     fun exportProgram() {
         viewModelScope.launch {
             val result = exportProgramToJsonUseCase()
             if (result.isSuccess) {
-                _uiState.value = _uiState.value.copy(
-                    exportError = null,
-                    exportSuccessMessage = "Program copied to clipboard!"
-                )
+                _uiState.update { state ->
+                    state.copy(
+                        exportError = null,
+                        exportSuccessMessage = "Program copied to clipboard!"
+                    )
+                }
             } else {
-                _uiState.value = _uiState.value.copy(
-                    exportError = result.exceptionOrNull()?.message ?: "Failed to export program",
-                    exportSuccessMessage = null
-                )
+                _uiState.update { state ->
+                    state.copy(
+                        exportError = result.exceptionOrNull()?.message ?: "Failed to export program",
+                        exportSuccessMessage = null
+                    )
+                }
             }
         }
     }
@@ -109,6 +151,8 @@ data class DashboardUiState(
     val isLoading: Boolean = true,
     val templates: List<WorkoutTemplateEntity> = emptyList(),
     val suggestedTemplateId: String? = null,
+    val completedWorkoutsCount: Int = 0,
+    val recentSessions: List<WorkoutSessionEntity> = emptyList(),
     val analyticsSummary: AnalyticsDashboardSummary? = null,
     val importError: String? = null,
     val importSuccessMessage: String? = null,

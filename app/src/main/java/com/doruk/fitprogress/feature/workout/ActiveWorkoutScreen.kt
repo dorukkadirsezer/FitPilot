@@ -99,7 +99,7 @@ fun ActiveWorkoutScreen(
                 onDismissRequest = { /* forced to click button */ },
                 title = {
                     Text(
-                        text = "Workout Complete!",
+                        text = stringResource(R.string.workout_complete_title),
                         color = AthleticEmerald,
                         fontWeight = FontWeight.Bold
                     )
@@ -110,7 +110,7 @@ fun ActiveWorkoutScreen(
                             Text(aiSummary!!, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         } else {
                             Text(
-                                "Great job finishing your workout!",
+                                stringResource(R.string.workout_complete_default_msg),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -333,14 +333,14 @@ fun ActiveWorkoutScreen(
             onDismissRequest = { showFinishDialog = false },
             title = {
                 Text(
-                    "Unfinished Sets",
+                    stringResource(R.string.unfinished_sets_title),
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold
                 )
             },
             text = {
                 Text(
-                    "You have unfinished sets. Do you want to save them as skipped and finish the workout?",
+                    stringResource(R.string.unfinished_sets_message),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             },
@@ -350,7 +350,7 @@ fun ActiveWorkoutScreen(
                         showFinishDialog = false
                         viewModel.finishWorkout(skipIncomplete = true)
                     },
-                    text = "Finish & Skip"
+                    text = stringResource(R.string.finish_and_skip)
                 )
             },
             dismissButton = {
@@ -467,7 +467,7 @@ fun ActiveWorkoutScreen(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("Shorten Cardio (-5 min)", color = MaterialTheme.colorScheme.onSurface)
+                        Text(stringResource(R.string.shorten_cardio_5m), color = MaterialTheme.colorScheme.onSurface)
                     }
 
                     TextButton(
@@ -480,7 +480,7 @@ fun ActiveWorkoutScreen(
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Mark Completed Manually", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.mark_completed_manually), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
 
                     TextButton(
@@ -538,7 +538,7 @@ fun ActiveWorkoutScreen(
                         contentColor = MaterialTheme.colorScheme.onSurface
                     )
                 ) {
-                    Text(if (timerRunning) stringResource(R.string.dialog_pause) else "Resume")
+                    Text(if (timerRunning) stringResource(R.string.dialog_pause) else stringResource(R.string.dialog_resume))
                 }
             },
             dismissButton = {
@@ -1160,8 +1160,8 @@ fun NoteDialog(
 
     val title = when (noteType) {
         is NoteType.Workout -> stringResource(R.string.workout_note)
-        is NoteType.Exercise -> "Exercise Note"
-        is NoteType.Set -> "Set Note"
+        is NoteType.Exercise -> stringResource(R.string.exercise_note_title)
+        is NoteType.Set -> stringResource(R.string.set_note_title)
     }
 
     AlertDialog(
@@ -1183,7 +1183,7 @@ fun NoteDialog(
                 shape = RoundedCornerShape(12.dp),
                 placeholder = {
                     Text(
-                        "Enter your note here...",
+                        stringResource(R.string.note_placeholder),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 },
@@ -1198,7 +1198,7 @@ fun NoteDialog(
         confirmButton = {
             PrimaryActionButton(
                 onClick = { onSave(noteType, text.ifBlank { null }) },
-                text = "Save"
+                text = stringResource(R.string.action_save)
             )
         },
         dismissButton = {
@@ -1278,7 +1278,7 @@ fun TimerSettingsDialog(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Enable Vibration", color = MaterialTheme.colorScheme.onSurface)
+                    Text(stringResource(R.string.enable_vibration), color = MaterialTheme.colorScheme.onSurface)
                     Switch(
                         checked = timerVibrationEnabled,
                         onCheckedChange = { viewModel.setTimerVibrationEnabled(it) }

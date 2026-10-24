@@ -113,7 +113,10 @@ fun WorkoutHistoryTelemetryCard(
             Column(modifier = Modifier.weight(1f)) {
                 val dayPrefix = when {
                     item.dayCode == null -> ""
-                    item.dayCode.startsWith("PROGRAM_DAY_") -> "Day ${item.dayCode.removePrefix("PROGRAM_DAY_")} — "
+                    item.dayCode.startsWith("PROGRAM_DAY_") -> {
+                        val dayNum = item.dayCode.removePrefix("PROGRAM_DAY_").toIntOrNull() ?: 1
+                        "${stringResource(R.string.day_number_format, dayNum)} — "
+                    }
                     else -> "${stringResource(R.string.day)} ${item.dayCode} — "
                 }
                 Text(

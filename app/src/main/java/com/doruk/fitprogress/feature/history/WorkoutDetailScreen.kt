@@ -119,7 +119,10 @@ fun WorkoutDetailScreen(
                         Column(modifier = Modifier.weight(1f)) {
                             val dayPrefix = when {
                                 detail.dayCode == null -> ""
-                                detail.dayCode.startsWith("PROGRAM_DAY_") -> "Day ${detail.dayCode.removePrefix("PROGRAM_DAY_")} — "
+                                detail.dayCode.startsWith("PROGRAM_DAY_") -> {
+                                    val dayNum = detail.dayCode.removePrefix("PROGRAM_DAY_").toIntOrNull() ?: 1
+                                    "${stringResource(R.string.day_number_format, dayNum)} — "
+                                }
                                 else -> "${stringResource(R.string.day)} ${detail.dayCode} — "
                             }
                             Text(
@@ -204,6 +207,7 @@ fun WorkoutDetailScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
+                    val exportToastMsg = stringResource(R.string.session_copied_toast)
                     // Side-by-Side Action Bar: Export to Coach & AI Summary (Zero Layout Shift)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -221,7 +225,7 @@ fun WorkoutDetailScreen(
                                     }
                                 }
                                 clipboard.setPrimaryClip(ClipData.newPlainText("FitPilot Session Export", exportText))
-                                Toast.makeText(context, "Session telemetry copied to clipboard", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, exportToastMsg, Toast.LENGTH_SHORT).show()
                             },
                             modifier = Modifier
                                 .weight(1f)
@@ -241,7 +245,7 @@ fun WorkoutDetailScreen(
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "Export to Coach",
+                                text = stringResource(R.string.export_to_coach),
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.SemiBold,
                                 maxLines = 1
@@ -521,7 +525,7 @@ fun SetDetailTelemetryRow(
                 )
             } else {
                 Text(
-                    text = "Incomplete",
+                    text = stringResource(R.string.status_incomplete),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

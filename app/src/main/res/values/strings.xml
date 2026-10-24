@@ -285,6 +285,61 @@
     <string name="coach_focus_chest_contraction">Focus on chest contraction at the top.</string>
     <string name="coach_constant_tension">Constant tension on shoulders.</string>
     <string name="coach_full_stretch">Full stretch and squeeze.</string>
+
+    <!-- Polish & Localization Keys -->
+    <string name="ai_coach_sync_hub">AI Coach Sync Hub</string>
+    <string name="ai_coach_sync_subtitle">Import custom plans or export stats for AI analysis</string>
+    <string name="status_ready">READY</string>
+    <string name="import_plan">Import Plan</string>
+    <string name="export_stats">Export Stats</string>
+    <string name="plans_count_format">%1$d PLANS</string>
+    <string name="movements_count_format">%1$d MOVEMENTS</string>
+    <string name="ai_coach_badge">AI COACH</string>
+    <string name="day_number_format">Day %1$d</string>
+    <string name="kcal_avg_format">%1$d kcal avg</string>
+    <string name="available_time">Available Time</string>
+    <string name="minutes_short_format">%1$dm</string>
+    <string name="time_option_60m">60+ min</string>
+    <string name="time_option_45m">45 min</string>
+    <string name="time_option_30m">30 min</string>
+    <string name="sleep_quality_label">Sleep Quality (1 = Poor, 5 = Great)</string>
+    <string name="energy_level_label">Energy Level (1 = Low, 5 = High)</string>
+    <string name="motivation_level_label">Motivation (1 = Low, 5 = High)</string>
+    <string name="muscle_soreness_label">Muscle Soreness (1 = None, 5 = Severe)</string>
+    <string name="knee_sensitivity_label">Knee Sensitivity</string>
+    <string name="lower_back_discomfort_label">Lower Back Discomfort</string>
+    <string name="prev_workout_hard_label">Previous Workout Felt Hard?</string>
+    <string name="sensitivity_none">None</string>
+    <string name="sensitivity_mild">Mild</string>
+    <string name="sensitivity_high">High</string>
+    <string name="time_limited_badge_format">TIME-LIMITED (%1$dM)</string>
+    <string name="empty_state_no_data">No Data</string>
+    <string name="empty_state_error">Something went wrong</string>
+    <string name="action_retry">Retry</string>
+    <string name="workout_complete_title">Workout Complete!</string>
+    <string name="workout_complete_default_msg">Great session! Your progress has been saved.</string>
+    <string name="unfinished_sets_title">Unfinished Sets</string>
+    <string name="unfinished_sets_message">You still have uncompleted working sets. Finishing now will mark them as skipped.</string>
+    <string name="finish_and_skip">Finish &amp; Skip</string>
+    <string name="rest_after_superset_format">Rest after superset: %1$ds</string>
+    <string name="cardio_recommended_format">Recommended: %1$d min (%2$s)</string>
+    <string name="cardio_reason_format">Reason: %1$s</string>
+    <string name="shorten_cardio_5m">Shorten (-5 min)</string>
+    <string name="mark_completed_manually">Mark Completed Manually</string>
+    <string name="dialog_resume">Resume</string>
+    <string name="superset_advice_format">%1$s: %2$s</string>
+    <string name="input_any">Any</string>
+    <string name="exercise_note_title">Exercise Note</string>
+    <string name="set_note_title">Set Note</string>
+    <string name="note_placeholder">Add note...</string>
+    <string name="action_save">Save</string>
+    <string name="enable_vibration">Enable Vibration</string>
+    <string name="export_to_coach">Export to Coach</string>
+    <string name="session_copied_toast">Workout session copied to clipboard for AI Coach</string>
+    <string name="status_incomplete">INCOMPLETE</string>
+    <string name="logs_count_format">%1$d LOGS</string>
+    <string name="status_configured">CONFIGURED</string>
+    <string name="status_empty">EMPTY</string>
 </resources>
 
 
