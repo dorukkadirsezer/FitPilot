@@ -61,13 +61,25 @@ class AiCoachingRepositoryImpl @Inject constructor(
 ) : AiCoachingRepository {
 
     companion object {
-        /**
-         * Builds the official Google Generative Language v1beta REST endpoint URL:
-         * `https://generativelanguage.googleapis.com/v1beta/models/$modelName:generateContent`
-         */
+        private const val GEMINI_MODELS_LIST_URL =
+            "https://generativelanguage.googleapis.com/v1beta/models"
+
         internal fun buildGenerateContentUrl(modelName: String = AiCoachModule.DEFAULT_GEMINI_MODEL): String {
             val cleanModelName = modelName.removePrefix("models/").trim()
             return "https://generativelanguage.googleapis.com/v1beta/models/$cleanModelName:generateContent"
+        }
+
+        /**
+         * Strictly filters out retired/restricted model families (1.5, 2.0, 2.5) and non-text endpoints.
+         */
+        internal fun isEligibleActiveModelName(rawModelName: String): Boolean {
+            val name = rawModelName.removePrefix("models/").trim().lowercase()
+            if (!name.startsWith("gemini-")) return false
+            if (name.contains("1.5") || name.contains("2.0") || name.contains("2.5") || name.contains("1.0")) {
+                return false
+            }
+            val excludedKeywords = listOf("tts", "image", "embedding", "aqa", "vision", "live", "transcribe", "audio", "banana", "omni")
+            return excludedKeywords.none { name.contains(it) }
         }
 
         private val MARKDOWN_FENCE_REGEX = Regex("(?i)```(?:json)?|```")
@@ -125,7 +137,6 @@ class AiCoachingRepositoryImpl @Inject constructor(
     }
 
     override suspend fun syncMacrocycleWithGemini(): AiSyncResult = withContext(Dispatchers.IO) {
-        // 1. H2 Consent Check: Respect user's explicit AI opt-in toggle before reading telemetry or API key
         val isAiEnabled = runCatching {
             aiSettingsDataStore.isAiEnabledFlow.firstOrNull() ?: false
         }.getOrDefault(false)
@@ -134,7 +145,6 @@ class AiCoachingRepositoryImpl @Inject constructor(
             return@withContext AiSyncResult.AiDisabled
         }
 
-        // 1.b M4 Explicit Data Sharing Consent Check before transmitting workout telemetry to Gemini API
         val hasAcceptedDataSharing = runCatching {
             aiSettingsDataStore.hasAcceptedDataSharingFlow.firstOrNull() ?: false
         }.getOrDefault(false)
@@ -143,7 +153,6 @@ class AiCoachingRepositoryImpl @Inject constructor(
             return@withContext AiSyncResult.DataSharingConsentRequired
         }
 
-        // 2. Dynamically and securely resolve Gemini API Key from EncryptedSharedPreferences via AiSettingsDataStore
         val rawApiKey = runCatching {
             aiSettingsDataStore.geminiApiKeyFlow.firstOrNull()?.trim()
         }.getOrNull()
@@ -152,7 +161,6 @@ class AiCoachingRepositoryImpl @Inject constructor(
             return@withContext AiSyncResult.MissingApiKey
         }
 
-        // 3. Aggregate lightweight user progression telemetry from Room
         val telemetryJson = runCatching {
             exportUserProgressionStatsUseCase.exportAsJsonString(maxRecentSessions = 10)
         }.getOrElse { e ->
@@ -167,8 +175,8 @@ class AiCoachingRepositoryImpl @Inject constructor(
             appendLine(telemetryJson)
         }
 
-        // 4. Call Gemini SDK first; if SDK throws Unexpected Response / SerializationException or model error,
-        // seamlessly fall back to direct Ktor HTTPS REST call with x-goog-api-key header.
+        // Try SDK first; on ANY SDK exception (HTTP 404, ServerException, SerializationException, GoogleGenerativeAIException)
+        // except offline/timeout, delegate to Ktor multi-model 3.x REST fallback.
         val rawResponseText = try {
             val sdkText = runCatching {
                 val generativeModel = generativeModelFactory.create(
@@ -180,7 +188,6 @@ class AiCoachingRepositoryImpl @Inject constructor(
                 if (sdkException is UnknownHostException || sdkException is SocketTimeoutException) {
                     throw sdkException
                 }
-                // Fallback to Ktor REST client to bypass deprecated SDK's envelope deserialization bug ("Unexpected Response")
                 callGeminiRestViaKtor(
                     apiKey = rawApiKey,
                     systemPrompt = SYSTEM_PROMPT,
@@ -241,7 +248,6 @@ class AiCoachingRepositoryImpl @Inject constructor(
             )
         }
 
-        // 5. Sanitize markdown fences & prose, then strictly parse and validate the JSON response
         val cleanJson = sanitizeAndExtractJson(rawResponseText)
         val rawFirst100 = rawResponseText.replace(Regex("\\s+"), " ").trim().take(100)
 
@@ -265,12 +271,10 @@ class AiCoachingRepositoryImpl @Inject constructor(
             )
         }
 
-        // 6. Atomically persist new macrocycle into Room & update ProfileDataStore
         return@withContext runCatching {
             val planDto = validatedDto.toProgramPlanDto()
             persistProgramPlanAtomically(planDto)
 
-            // Optionally log interaction if saveAiLogs is enabled
             val shouldLog = aiSettingsDataStore.saveAiLogsFlow.firstOrNull() ?: true
             if (shouldLog) {
                 aiDao.insertInteractionLog(
@@ -299,12 +303,6 @@ class AiCoachingRepositoryImpl @Inject constructor(
         }
     }
 
-    /**
-     * Direct Ktor HTTPS fallback for Gemini v1beta generateContent.
-     * Uses `https://generativelanguage.googleapis.com/v1beta/models/$modelName:generateContent`
-     * with `DEFAULT_GEMINI_MODEL = "gemini-1.5-flash"`, sends the API key strictly in the
-     * `x-goog-api-key` header, enforces `responseMimeType = "application/json"`, and includes `error.message` on failure.
-     */
     private suspend fun callGeminiRestViaKtor(
         apiKey: String,
         systemPrompt: String,
@@ -336,25 +334,39 @@ class AiCoachingRepositoryImpl @Inject constructor(
             })
         }.toString()
 
-        val modelName = AiCoachModule.DEFAULT_GEMINI_MODEL
-        val endpointUrl = buildGenerateContentUrl(modelName)
-        val httpResponse = ktorHttpClient.post(endpointUrl) {
-            header("x-goog-api-key", apiKey)
-            contentType(ContentType.Application.Json)
-            setBody(requestBodyJson)
+        var lastStatusCode = 404
+        var lastResponseBody = ""
+        val triedModels = mutableSetOf<String>()
+
+        for (modelName in AiCoachModule.FALLBACK_GEMINI_MODELS) {
+            triedModels.add(modelName)
+            val endpointUrl = buildGenerateContentUrl(modelName)
+            val httpResponse = ktorHttpClient.post(endpointUrl) {
+                header("x-goog-api-key", apiKey)
+                contentType(ContentType.Application.Json)
+                setBody(requestBodyJson)
+            }
+
+            val responseBody = httpResponse.bodyAsText()
+            if (httpResponse.status.isSuccess()) {
+                return extractTextFromGenerateContentResponse(responseBody)
+            }
+
+            lastStatusCode = httpResponse.status.value
+            lastResponseBody = responseBody
+
+            if (lastStatusCode != 404) {
+                break
+            }
         }
 
-        val responseBody = httpResponse.bodyAsText()
-        if (httpResponse.status.isSuccess()) {
-            return extractTextFromGenerateContentResponse(responseBody)
-        }
+        // If static 3.x models returned 404, query /v1beta/models and try eligible active models (excluding 1.5, 2.0, 2.5)
+        if (lastStatusCode == 404) {
+            val discoveredModels = discoverAvailableFlashModels(apiKey)
+            for (discoveredModel in discoveredModels) {
+                if (discoveredModel in triedModels) continue
+                triedModels.add(discoveredModel)
 
-        val primaryStatusCode = httpResponse.status.value
-
-        // If the primary model returns 404 on this account, dynamically query v1beta/models once to resolve an active Flash model
-        if (primaryStatusCode == 404) {
-            val discoveredModel = discoverAvailableFlashModel(apiKey)
-            if (!discoveredModel.isNullOrBlank() && discoveredModel != modelName) {
                 val discoveredUrl = buildGenerateContentUrl(discoveredModel)
                 val retryResponse = ktorHttpClient.post(discoveredUrl) {
                     header("x-goog-api-key", apiKey)
@@ -365,56 +377,60 @@ class AiCoachingRepositoryImpl @Inject constructor(
                 if (retryResponse.status.isSuccess()) {
                     return extractTextFromGenerateContentResponse(retryBody)
                 }
+                lastStatusCode = retryResponse.status.value
+                lastResponseBody = retryBody
+                if (lastStatusCode != 404) {
+                    break
+                }
             }
         }
 
-        val errorMessage = extractApiErrorMessage(responseBody)
-        val isAuthOrQuota = primaryStatusCode == 401 || primaryStatusCode == 403 || primaryStatusCode == 429 ||
-            responseBody.contains("API_KEY", ignoreCase = true) ||
-            responseBody.contains("API key not valid", ignoreCase = true) ||
-            responseBody.contains("quota", ignoreCase = true)
+        val errorMessage = extractApiErrorMessage(lastResponseBody)
+        val isAuthOrQuota = lastStatusCode == 401 || lastStatusCode == 403 || lastStatusCode == 429 ||
+            lastResponseBody.contains("API_KEY", ignoreCase = true) ||
+            lastResponseBody.contains("API key not valid", ignoreCase = true) ||
+            lastResponseBody.contains("quota", ignoreCase = true)
 
         throw GeminiRestApiException(
             userMessage = if (isAuthOrQuota) {
-                "Gemini API anahtarı geçersiz veya kota sınırına ulaşıldı (HTTP $primaryStatusCode): $errorMessage"
+                "Gemini API anahtarı geçersiz veya kota sınırına ulaşıldı (HTTP $lastStatusCode): $errorMessage"
             } else {
-                "Gemini HTTP $primaryStatusCode hatası: $errorMessage"
+                "Gemini HTTP $lastStatusCode hatası: $errorMessage"
             },
             isAuthOrQuota = isAuthOrQuota
         )
     }
 
-    private suspend fun discoverAvailableFlashModel(apiKey: String): String? = runCatching {
-        val response = ktorHttpClient.get("https://generativelanguage.googleapis.com/v1beta/models") {
+    /**
+     * Queries `GET https://generativelanguage.googleapis.com/v1beta/models`, strictly filters out
+     * any model containing `1.5`, `2.0`, or `2.5`, and returns eligible `generateContent` models
+     * prioritizing `flash` models.
+     */
+    private suspend fun discoverAvailableFlashModels(apiKey: String): List<String> = runCatching {
+        val response = ktorHttpClient.get(GEMINI_MODELS_LIST_URL) {
             header("x-goog-api-key", apiKey)
         }
-        if (!response.status.isSuccess()) return@runCatching null
+        if (!response.status.isSuccess()) return@runCatching emptyList()
 
         val rootObj = json.parseToJsonElement(response.bodyAsText()).jsonObject
-        val modelsArray = rootObj["models"]?.jsonArray ?: return@runCatching null
+        val modelsArray = rootObj["models"]?.jsonArray ?: return@runCatching emptyList()
 
-        val generateContentModels = modelsArray.mapNotNull { element ->
+        val eligibleModels = modelsArray.mapNotNull { element ->
             val modelObj = element.jsonObject
-            val name = modelObj["name"]?.jsonPrimitive?.content?.removePrefix("models/") ?: return@mapNotNull null
+            val name = modelObj["name"]?.jsonPrimitive?.content?.removePrefix("models/")?.trim()
+                ?: return@mapNotNull null
             val methods = modelObj["supportedGenerationMethods"]?.jsonArray
                 ?.mapNotNull { it.jsonPrimitive.content }
                 .orEmpty()
-            if ("generateContent" in methods &&
-                !name.contains("tts", ignoreCase = true) &&
-                !name.contains("image", ignoreCase = true) &&
-                !name.contains("embedding", ignoreCase = true) &&
-                !name.contains("aqa", ignoreCase = true) &&
-                !name.contains("vision", ignoreCase = true)
-            ) {
+            if ("generateContent" in methods && isEligibleActiveModelName(name)) {
                 name
             } else {
                 null
             }
         }
 
-        generateContentModels.firstOrNull { it.contains("flash", ignoreCase = true) }
-            ?: generateContentModels.firstOrNull { it.contains("gemini", ignoreCase = true) }
-    }.getOrNull()
+        eligibleModels.sortedByDescending { it.contains("flash", ignoreCase = true) }
+    }.getOrDefault(emptyList())
 
     private fun extractTextFromGenerateContentResponse(responseBody: String): String {
         val rootObj = json.parseToJsonElement(responseBody).jsonObject
@@ -444,10 +460,6 @@ class AiCoachingRepositoryImpl @Inject constructor(
             ?: responseBody
     }
 
-    /**
-     * Extracts `error.message` (and `error.status`) from the standard Google REST API error JSON payload,
-     * falling back to a single-line snippet of the raw error body if JSON parsing fails.
-     */
     private fun extractApiErrorMessage(responseBody: String): String {
         val parsedErrorMessage = runCatching {
             val rootObj = json.parseToJsonElement(responseBody).jsonObject
@@ -466,16 +478,9 @@ class AiCoachingRepositoryImpl @Inject constructor(
             .ifBlank { "Sunucu hata detayı döndürmedi" }
     }
 
-    /**
-     * Multi-stage Markdown & prose sanitizer.
-     * Tolerates missing/malformed ```json tags and extracts only the substring
-     * between the outermost `{` or `[` and the matching last `}` or `]`.
-     */
     internal fun sanitizeAndExtractJson(raw: String): String {
-        // Step 1: Strip any ```json or ``` fences (even if unclosed or malformed)
         val withoutFences = MARKDOWN_FENCE_REGEX.replace(raw, "").trim()
 
-        // Step 2: Locate the first opening brace/bracket and last closing brace/bracket
         val firstBrace = withoutFences.indexOf('{')
         val firstBracket = withoutFences.indexOf('[')
 
@@ -501,10 +506,6 @@ class AiCoachingRepositoryImpl @Inject constructor(
         return withoutFences
     }
 
-    /**
-     * Supports both a root `ValidatedCoachPlanDto` JSON object and a root JSON array
-     * of `ValidatedWorkoutDayDto` items in case the model outputs a direct array.
-     */
     private fun decodeCoachPlanCompat(cleanJson: String): ValidatedCoachPlanDto {
         val trimmed = cleanJson.trim()
         return if (trimmed.startsWith("[")) {
@@ -516,7 +517,6 @@ class AiCoachingRepositoryImpl @Inject constructor(
     }
 
     private suspend fun persistProgramPlanAtomically(plan: ProgramPlanDto) {
-        // M4 Privacy: Do not overwrite local athlete name with model output; only update bounded nutrition targets
         profileDataStore.setNutritionTargets(
             calories = plan.dailyNutritionTarget.calories,
             protein = plan.dailyNutritionTarget.proteinGrams,

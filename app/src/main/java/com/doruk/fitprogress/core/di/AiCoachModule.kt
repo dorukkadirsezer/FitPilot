@@ -1,4 +1,4 @@
-﻿package com.doruk.fitprogress.core.di
+package com.doruk.fitprogress.core.di
 
 import com.doruk.fitprogress.core.ai.AiCoachingRepository
 import com.doruk.fitprogress.core.ai.AiCoachingRepositoryImpl
@@ -22,11 +22,6 @@ import javax.inject.Singleton
 @Retention(AnnotationRetention.BINARY)
 annotation class AiCoachJson
 
-/**
- * Factory interface that creates a [GenerativeModel] instance dynamically bound
- * to the user's runtime Gemini API Key from [com.doruk.fitprogress.core.datastore.AiSettingsDataStore]
- * while strictly enforcing `responseMimeType = "application/json"`.
- */
 fun interface GenerativeModelFactory {
     fun create(apiKey: String, systemPrompt: String): GenerativeModel
 }
@@ -45,7 +40,14 @@ abstract class AiCoachBindsModule {
 @InstallIn(SingletonComponent::class)
 object AiCoachModule {
 
-    const val DEFAULT_GEMINI_MODEL = "gemini-1.5-flash"
+    const val DEFAULT_GEMINI_MODEL = "gemini-3.8-flash"
+
+    val FALLBACK_GEMINI_MODELS = listOf(
+        "gemini-3.8-flash",
+        "gemini-3.6-flash",
+        "gemini-3.5-flash-lite",
+        "gemini-3.1-flash-lite"
+    )
 
     @Provides
     @Singleton
@@ -94,6 +96,3 @@ object AiCoachModule {
         }
     }
 }
-
-
-

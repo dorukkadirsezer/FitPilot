@@ -1,4 +1,4 @@
-﻿package com.doruk.fitprogress.core.ai
+package com.doruk.fitprogress.core.ai
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -9,14 +9,14 @@ import java.net.URL
 
 /**
  * Implementation of AiService using HTTPS to Google Gemini REST API.
- * Uses active `gemini-1.5-flash` model and passes the API key via the
+ * Uses active `gemini-3.8-flash` model and passes the API key via the
  * `x-goog-api-key` header (never in the URL query string).
  */
 class GeminiAiService : AiService {
 
     companion object {
         private const val GEMINI_ENDPOINT =
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent"
     }
 
     private suspend fun callGeminiApi(prompt: String, apiKey: String): Result<String> = withContext(Dispatchers.IO) {
