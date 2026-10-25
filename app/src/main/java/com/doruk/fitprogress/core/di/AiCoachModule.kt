@@ -47,8 +47,6 @@ object AiCoachModule {
 
     const val DEFAULT_GEMINI_MODEL = "gemini-1.5-flash"
 
-    val FALLBACK_GEMINI_MODELS = listOf("gemini-1.5-flash", "gemini-1.5-flash-latest")
-
     @Provides
     @Singleton
     @AiCoachJson
