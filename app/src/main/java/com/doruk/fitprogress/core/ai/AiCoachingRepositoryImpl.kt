@@ -167,7 +167,7 @@ class AiCoachingRepositoryImpl @Inject constructor(
             appendLine(telemetryJson)
         }
 
-        // 4. Call Gemini SDK first; if SDK throws Unexpected Response / SerializationException on gemini-1.5-flash envelope metadata,
+        // 4. Call Gemini SDK first; if SDK throws Unexpected Response / SerializationException on gemini-1.5-flash-latest envelope metadata,
         // seamlessly fall back to direct Ktor HTTPS REST call with x-goog-api-key header.
         val rawResponseText = try {
             val sdkText = runCatching {
@@ -310,7 +310,7 @@ class AiCoachingRepositoryImpl @Inject constructor(
      * Direct Ktor HTTPS fallback for Gemini v1beta generateContent.
      * Uses `https://generativelanguage.googleapis.com/v1beta/models/$modelName:generateContent`,
      * sends the API key strictly in the `x-goog-api-key` header, enforces `responseMimeType = "application/json"`,
-     * uses only the static gemini-1.5-flash model, and includes `error.message` on failure.
+     * uses only the static gemini-1.5-flash-latest model, and includes `error.message` on failure.
      */
     private suspend fun callGeminiRestViaKtor(
         apiKey: String,
@@ -563,4 +563,5 @@ class AiCoachingRepositoryImpl @Inject constructor(
         val isAuthOrQuota: Boolean
     ) : Exception(userMessage)
 }
+
 
