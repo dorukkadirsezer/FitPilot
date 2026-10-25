@@ -9,14 +9,14 @@ import java.net.URL
 
 /**
  * Implementation of AiService using HTTPS to Google Gemini REST API.
- * Uses active `gemini-1.5-flash-latest` model and passes the API key via the
+ * Uses active `gemini-1.5-flash` model and passes the API key via the
  * `x-goog-api-key` header (never in the URL query string).
  */
 class GeminiAiService : AiService {
 
     companion object {
         private const val GEMINI_ENDPOINT =
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent"
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
     }
 
     private suspend fun callGeminiApi(prompt: String, apiKey: String): Result<String> = withContext(Dispatchers.IO) {

@@ -302,7 +302,7 @@ class AiCoachingRepositoryImpl @Inject constructor(
     /**
      * Direct Ktor HTTPS fallback for Gemini v1beta generateContent.
      * Uses `https://generativelanguage.googleapis.com/v1beta/models/$modelName:generateContent`
-     * with `DEFAULT_GEMINI_MODEL = "gemini-1.5-flash-latest"`, sends the API key strictly in the
+     * with `DEFAULT_GEMINI_MODEL = "gemini-1.5-flash"`, sends the API key strictly in the
      * `x-goog-api-key` header, enforces `responseMimeType = "application/json"`, and includes `error.message` on failure.
      */
     private suspend fun callGeminiRestViaKtor(
