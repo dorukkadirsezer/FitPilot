@@ -61,9 +61,6 @@ class AiCoachingRepositoryImpl @Inject constructor(
 ) : AiCoachingRepository {
 
     companion object {
-        private const val GEMINI_MODELS_LIST_URL =
-            "https://generativelanguage.googleapis.com/v1beta/models"
-
         /**
          * Builds the official Google Generative Language v1beta REST endpoint URL:
          * `https://generativelanguage.googleapis.com/v1beta/models/$modelName:generateContent`
@@ -180,9 +177,16 @@ class AiCoachingRepositoryImpl @Inject constructor(
                 )
                 generativeModel.generateContent(userPrompt).text?.trim()
             }.getOrElse { sdkException ->
-                if (sdkException is UnknownHostException || sdkException is SocketTimeoutException) {
+                val msg = sdkException.localizedMessage ?: ""
+                // Only fallback for serialization errors or unexpected response formats
+                val isSerializationError = sdkException is SerializationException ||
+                        msg.contains("Unexpected Response", ignoreCase = true) ||
+                        msg.contains("Serialization", ignoreCase = true)
+
+                if (!isSerializationError) {
                     throw sdkException
                 }
+
                 // Fallback to Ktor REST client to bypass deprecated SDK's envelope deserialization bug ("Unexpected Response")
                 callGeminiRestViaKtor(
                     apiKey = rawApiKey,
@@ -306,7 +310,7 @@ class AiCoachingRepositoryImpl @Inject constructor(
      * Direct Ktor HTTPS fallback for Gemini v1beta generateContent.
      * Uses `https://generativelanguage.googleapis.com/v1beta/models/$modelName:generateContent`,
      * sends the API key strictly in the `x-goog-api-key` header, enforces `responseMimeType = "application/json"`,
-     * falls back across supported stable models if HTTP 404 is returned, and includes `error.message` on failure.
+     * uses only the static gemini-1.5-flash model, and includes `error.message` on failure.
      */
     private suspend fun callGeminiRestViaKtor(
         apiKey: String,
@@ -339,57 +343,24 @@ class AiCoachingRepositoryImpl @Inject constructor(
             })
         }.toString()
 
-        var lastStatusCode = 404
-        var lastResponseBody = ""
-
-        val candidateModels = AiCoachModule.FALLBACK_GEMINI_MODELS.toMutableList()
-
-        for (modelName in candidateModels) {
-            val endpointUrl = buildGenerateContentUrl(modelName)
-            val httpResponse = ktorHttpClient.post(endpointUrl) {
-                header("x-goog-api-key", apiKey)
-                contentType(ContentType.Application.Json)
-                setBody(requestBodyJson)
-            }
-
-            val responseBody = httpResponse.bodyAsText()
-            if (httpResponse.status.isSuccess()) {
-                return extractTextFromGenerateContentResponse(responseBody)
-            }
-
-            lastStatusCode = httpResponse.status.value
-            lastResponseBody = responseBody
-
-            // Only try the next fallback model if the current model name returned HTTP 404 (Not Found)
-            if (lastStatusCode != 404) {
-                break
-            }
+        val endpointUrl = buildGenerateContentUrl(AiCoachModule.DEFAULT_GEMINI_MODEL)
+        val httpResponse = ktorHttpClient.post(endpointUrl) {
+            header("x-goog-api-key", apiKey)
+            contentType(ContentType.Application.Json)
+            setBody(requestBodyJson)
         }
 
-        // If all static model aliases returned 404, query /v1beta/models dynamically once to find an active model for this API key
-        if (lastStatusCode == 404) {
-            val discoveredModel = discoverAvailableFlashModel(apiKey)
-            if (!discoveredModel.isNullOrBlank()) {
-                val endpointUrl = buildGenerateContentUrl(discoveredModel)
-                val httpResponse = ktorHttpClient.post(endpointUrl) {
-                    header("x-goog-api-key", apiKey)
-                    contentType(ContentType.Application.Json)
-                    setBody(requestBodyJson)
-                }
-                val responseBody = httpResponse.bodyAsText()
-                if (httpResponse.status.isSuccess()) {
-                    return extractTextFromGenerateContentResponse(responseBody)
-                }
-                lastStatusCode = httpResponse.status.value
-                lastResponseBody = responseBody
-            }
+        val responseBody = httpResponse.bodyAsText()
+        if (httpResponse.status.isSuccess()) {
+            return extractTextFromGenerateContentResponse(responseBody)
         }
 
-        val errorMessage = extractApiErrorMessage(lastResponseBody)
+        val lastStatusCode = httpResponse.status.value
+        val errorMessage = extractApiErrorMessage(responseBody)
         val isAuthOrQuota = lastStatusCode == 401 || lastStatusCode == 403 || lastStatusCode == 429 ||
-            lastResponseBody.contains("API_KEY", ignoreCase = true) ||
-            lastResponseBody.contains("API key not valid", ignoreCase = true) ||
-            lastResponseBody.contains("quota", ignoreCase = true)
+            responseBody.contains("API_KEY", ignoreCase = true) ||
+            responseBody.contains("API key not valid", ignoreCase = true) ||
+            responseBody.contains("quota", ignoreCase = true)
 
         throw GeminiRestApiException(
             userMessage = if (isAuthOrQuota) {
@@ -450,42 +421,6 @@ class AiCoachingRepositoryImpl @Inject constructor(
             .take(180)
             .ifBlank { "Sunucu hata detayÄ± dÃ¶ndÃ¼rmedi" }
     }
-
-    /**
-     * Queries `GET https://generativelanguage.googleapis.com/v1beta/models` if static model names return 404,
-     * selecting the best available model that supports `generateContent`.
-     */
-    private suspend fun discoverAvailableFlashModel(apiKey: String): String? = runCatching {
-        val response = ktorHttpClient.get(GEMINI_MODELS_LIST_URL) {
-            header("x-goog-api-key", apiKey)
-        }
-        if (!response.status.isSuccess()) return@runCatching null
-
-        val rootObj = json.parseToJsonElement(response.bodyAsText()).jsonObject
-        val modelsArray = rootObj["models"]?.jsonArray ?: return@runCatching null
-
-        val generateContentModels = modelsArray.mapNotNull { element ->
-            val modelObj = element.jsonObject
-            val name = modelObj["name"]?.jsonPrimitive?.content?.removePrefix("models/") ?: return@mapNotNull null
-            val methods = modelObj["supportedGenerationMethods"]?.jsonArray
-                ?.mapNotNull { it.jsonPrimitive.content }
-                .orEmpty()
-            if ("generateContent" in methods &&
-                !name.contains("tts", ignoreCase = true) &&
-                !name.contains("image", ignoreCase = true) &&
-                !name.contains("embedding", ignoreCase = true) &&
-                !name.contains("aqa", ignoreCase = true) &&
-                !name.contains("vision", ignoreCase = true)
-            ) {
-                name
-            } else {
-                null
-            }
-        }
-
-        generateContentModels.firstOrNull { it.contains("flash", ignoreCase = true) }
-            ?: generateContentModels.firstOrNull { it.contains("gemini", ignoreCase = true) }
-    }.getOrNull()
 
     /**
      * Multi-stage Markdown & prose sanitizer.

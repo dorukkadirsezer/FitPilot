@@ -64,4 +64,5 @@ open class FakeWorkoutDao : WorkoutDao {
     override suspend fun updateWorkoutSessionNote(sessionId: String, note: String?) {}
     override suspend fun updateExerciseSessionNote(exerciseSessionId: String, note: String?) {}
     override suspend fun updateSetLogNote(setLogId: String, note: String?) {}
+    override fun getCompletedWorkoutsCountFlow(): Flow<Int> = kotlinx.coroutines.flow.flowOf(0)
 }

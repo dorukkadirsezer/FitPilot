@@ -35,10 +35,12 @@ class SyncCoachPlanUseCaseTest {
         profileDataStore = mockk(relaxed = true)
         context = mockk(relaxed = true)
         clipboardManager = mockk(relaxed = true)
+        val database = mockk<com.doruk.fitprogress.core.database.GymFlowDatabase>(relaxed = true)
+        val json = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
 
         every { context.getSystemService(Context.CLIPBOARD_SERVICE) } returns clipboardManager
 
-        useCase = SyncCoachPlanUseCase(workoutDao, profileDataStore, context)
+        useCase = SyncCoachPlanUseCase(database, workoutDao, profileDataStore, json, context)
     }
 
     @After
@@ -56,7 +58,7 @@ class SyncCoachPlanUseCaseTest {
 
         // Assert
         assertTrue(result.isFailure)
-        assertTrue(result.exceptionOrNull()?.message?.contains("empty") == true)
+        assertTrue(result.exceptionOrNull()?.message?.contains("Pano bo") == true)
     }
 
     @Test
@@ -73,7 +75,7 @@ class SyncCoachPlanUseCaseTest {
 
         // Assert
         assertTrue(result.isFailure)
-        assertTrue(result.exceptionOrNull()?.message?.contains("Failed to parse program") == true)
+        assertTrue(result.exceptionOrNull()?.message?.contains("doğrulanamadı") == true)
     }
 
     @Test
@@ -99,6 +101,6 @@ class SyncCoachPlanUseCaseTest {
 
         // Assert
         assertTrue(result.isFailure)
-        assertTrue(result.exceptionOrNull()?.message?.contains("Failed to parse program") == true)
+        assertTrue(result.exceptionOrNull()?.message?.contains("doğrulanamadı") == true)
     }
 }
