@@ -1,4 +1,4 @@
-﻿package com.doruk.fitprogress.core.ai
+package com.doruk.fitprogress.core.ai
 
 import androidx.room.withTransaction
 import com.doruk.fitprogress.core.database.GymFlowDatabase
@@ -157,7 +157,7 @@ class AiCoachingRepositoryImpl @Inject constructor(
             exportUserProgressionStatsUseCase.exportAsJsonString(maxRecentSessions = 10)
         }.getOrElse { e ->
             return@withContext AiSyncResult.SchemaValidationError(
-                reason = "Telemetri verisi hazÄ±rlanamadÄ±: ${e.localizedMessage ?: "Bilinmeyen hata"}"
+                reason = "Telemetri verisi hazırlanamadı: ${e.localizedMessage ?: "Bilinmeyen hata"}"
             )
         }
 
@@ -167,7 +167,7 @@ class AiCoachingRepositoryImpl @Inject constructor(
             appendLine(telemetryJson)
         }
 
-        // 4. Call Gemini SDK first; if SDK throws Unexpected Response / SerializationException on gemini-1.5-flash-latest envelope metadata,
+        // 4. Call Gemini SDK first; if SDK throws Unexpected Response / SerializationException or model error,
         // seamlessly fall back to direct Ktor HTTPS REST call with x-goog-api-key header.
         val rawResponseText = try {
             val sdkText = runCatching {
@@ -177,16 +177,9 @@ class AiCoachingRepositoryImpl @Inject constructor(
                 )
                 generativeModel.generateContent(userPrompt).text?.trim()
             }.getOrElse { sdkException ->
-                val msg = sdkException.localizedMessage ?: ""
-                // Only fallback for serialization errors or unexpected response formats
-                val isSerializationError = sdkException is SerializationException ||
-                        msg.contains("Unexpected Response", ignoreCase = true) ||
-                        msg.contains("Serialization", ignoreCase = true)
-
-                if (!isSerializationError) {
+                if (sdkException is UnknownHostException || sdkException is SocketTimeoutException) {
                     throw sdkException
                 }
-
                 // Fallback to Ktor REST client to bypass deprecated SDK's envelope deserialization bug ("Unexpected Response")
                 callGeminiRestViaKtor(
                     apiKey = rawApiKey,
@@ -210,7 +203,7 @@ class AiCoachingRepositoryImpl @Inject constructor(
                 isQuotaOrAuthError = e.isAuthOrQuota
             )
         } catch (e: GoogleGenerativeAIException) {
-            val msg = e.localizedMessage ?: "Gemini API hatasÄ±"
+            val msg = e.localizedMessage ?: "Gemini API hatası"
             val isAuthOrQuota = msg.contains("API_KEY", ignoreCase = true) ||
                 msg.contains("API key", ignoreCase = true) ||
                 msg.contains("quota", ignoreCase = true) ||
@@ -218,33 +211,33 @@ class AiCoachingRepositoryImpl @Inject constructor(
                 msg.contains("429")
             return@withContext AiSyncResult.NetworkError(
                 userMessage = if (isAuthOrQuota) {
-                    "Gemini API anahtarÄ± geÃ§ersiz veya kota sÄ±nÄ±rÄ±na ulaÅŸÄ±ldÄ±. LÃ¼tfen AI AyarlarÄ±nÄ± kontrol edin."
+                    "Gemini API anahtarı geçersiz veya kota sınırına ulaşıldı. Lütfen AI Ayarlarını kontrol edin."
                 } else {
-                    "Gemini servis hatasÄ±: $msg"
+                    "Gemini servis hatası: $msg"
                 },
                 isQuotaOrAuthError = isAuthOrQuota
             )
         } catch (e: UnknownHostException) {
             return@withContext AiSyncResult.NetworkError(
-                userMessage = "Ä°nternet baÄŸlantÄ±sÄ± bulunamadÄ±. LÃ¼tfen aÄŸ baÄŸlantÄ±nÄ±zÄ± kontrol edin."
+                userMessage = "İnternet bağlantısı bulunamadı. Lütfen ağ bağlantınızı kontrol edin."
             )
         } catch (e: SocketTimeoutException) {
             return@withContext AiSyncResult.NetworkError(
-                userMessage = "Gemini API yanÄ±t sÃ¼resi zaman aÅŸÄ±mÄ±na uÄŸradÄ±. LÃ¼tfen tekrar deneyin."
+                userMessage = "Gemini API yanıt süresi zaman aşımına uğradı. Lütfen tekrar deneyin."
             )
         } catch (e: IOException) {
             return@withContext AiSyncResult.NetworkError(
-                userMessage = "AÄŸ iletiÅŸim hatasÄ±: ${e.localizedMessage ?: "BaÄŸlantÄ± kesildi"}"
+                userMessage = "Ağ iletişim hatası: ${e.localizedMessage ?: "Bağlantı kesildi"}"
             )
         } catch (e: Exception) {
             return@withContext AiSyncResult.NetworkError(
-                userMessage = "Beklenmeyen baÄŸlantÄ± hatasÄ±: ${e.localizedMessage ?: "Bilinmeyen hata"}"
+                userMessage = "Beklenmeyen bağlantı hatası: ${e.localizedMessage ?: "Bilinmeyen hata"}"
             )
         }
 
         if (rawResponseText.isNullOrBlank()) {
             return@withContext AiSyncResult.SchemaValidationError(
-                reason = "Gemini boÅŸ bir yanÄ±t dÃ¶ndÃ¼rdÃ¼."
+                reason = "Gemini boş bir yanıt döndürdü."
             )
         }
 
@@ -257,17 +250,17 @@ class AiCoachingRepositoryImpl @Inject constructor(
             parsed.validate()
         } catch (e: SerializationException) {
             return@withContext AiSyncResult.SchemaValidationError(
-                reason = "JSON ayrÄ±ÅŸtÄ±rma hatasÄ±: ${e.localizedMessage?.take(80) ?: "GeÃ§ersiz format"} | Ä°lk 100 krkt: [$rawFirst100]",
+                reason = "JSON ayrıştırma hatası: ${e.localizedMessage?.take(80) ?: "Geçersiz format"} | İlk 100 krkt: [$rawFirst100]",
                 rawSnippet = rawFirst100
             )
         } catch (e: IllegalArgumentException) {
             return@withContext AiSyncResult.SchemaValidationError(
-                reason = "Åema doÄŸrulama hatasÄ±: ${e.localizedMessage?.take(80) ?: "Eksik alan"} | Ä°lk 100 krkt: [$rawFirst100]",
+                reason = "Şema doğrulama hatası: ${e.localizedMessage?.take(80) ?: "Eksik alan"} | İlk 100 krkt: [$rawFirst100]",
                 rawSnippet = rawFirst100
             )
         } catch (e: Exception) {
             return@withContext AiSyncResult.SchemaValidationError(
-                reason = "YanÄ±t doÄŸrulama hatasÄ± (${e.javaClass.simpleName}): ${e.localizedMessage?.take(80) ?: "Bilinmeyen hata"} | Ä°lk 100 krkt: [$rawFirst100]",
+                reason = "Yanıt doğrulama hatası (${e.javaClass.simpleName}): ${e.localizedMessage?.take(80) ?: "Bilinmeyen hata"} | İlk 100 krkt: [$rawFirst100]",
                 rawSnippet = rawFirst100
             )
         }
@@ -300,7 +293,7 @@ class AiCoachingRepositoryImpl @Inject constructor(
             )
         }.getOrElse { dbError ->
             AiSyncResult.SchemaValidationError(
-                reason = "VeritabanÄ± kayÄ±t hatasÄ±: ${dbError.localizedMessage ?: "KayÄ±t baÅŸarÄ±sÄ±z"} | Ä°lk 100 krkt: [$rawFirst100]",
+                reason = "Veritabanı kayıt hatası: ${dbError.localizedMessage ?: "Kayıt başarısız"} | İlk 100 krkt: [$rawFirst100]",
                 rawSnippet = rawFirst100
             )
         }
@@ -308,9 +301,9 @@ class AiCoachingRepositoryImpl @Inject constructor(
 
     /**
      * Direct Ktor HTTPS fallback for Gemini v1beta generateContent.
-     * Uses `https://generativelanguage.googleapis.com/v1beta/models/$modelName:generateContent`,
-     * sends the API key strictly in the `x-goog-api-key` header, enforces `responseMimeType = "application/json"`,
-     * uses only the static gemini-1.5-flash-latest model, and includes `error.message` on failure.
+     * Uses `https://generativelanguage.googleapis.com/v1beta/models/$modelName:generateContent`
+     * with `DEFAULT_GEMINI_MODEL = "gemini-1.5-flash-latest"`, sends the API key strictly in the
+     * `x-goog-api-key` header, enforces `responseMimeType = "application/json"`, and includes `error.message` on failure.
      */
     private suspend fun callGeminiRestViaKtor(
         apiKey: String,
@@ -343,7 +336,8 @@ class AiCoachingRepositoryImpl @Inject constructor(
             })
         }.toString()
 
-        val endpointUrl = buildGenerateContentUrl(AiCoachModule.DEFAULT_GEMINI_MODEL)
+        val modelName = AiCoachModule.DEFAULT_GEMINI_MODEL
+        val endpointUrl = buildGenerateContentUrl(modelName)
         val httpResponse = ktorHttpClient.post(endpointUrl) {
             header("x-goog-api-key", apiKey)
             contentType(ContentType.Application.Json)
@@ -355,36 +349,86 @@ class AiCoachingRepositoryImpl @Inject constructor(
             return extractTextFromGenerateContentResponse(responseBody)
         }
 
-        val lastStatusCode = httpResponse.status.value
+        val primaryStatusCode = httpResponse.status.value
+
+        // If the primary model returns 404 on this account, dynamically query v1beta/models once to resolve an active Flash model
+        if (primaryStatusCode == 404) {
+            val discoveredModel = discoverAvailableFlashModel(apiKey)
+            if (!discoveredModel.isNullOrBlank() && discoveredModel != modelName) {
+                val discoveredUrl = buildGenerateContentUrl(discoveredModel)
+                val retryResponse = ktorHttpClient.post(discoveredUrl) {
+                    header("x-goog-api-key", apiKey)
+                    contentType(ContentType.Application.Json)
+                    setBody(requestBodyJson)
+                }
+                val retryBody = retryResponse.bodyAsText()
+                if (retryResponse.status.isSuccess()) {
+                    return extractTextFromGenerateContentResponse(retryBody)
+                }
+            }
+        }
+
         val errorMessage = extractApiErrorMessage(responseBody)
-        val isAuthOrQuota = lastStatusCode == 401 || lastStatusCode == 403 || lastStatusCode == 429 ||
+        val isAuthOrQuota = primaryStatusCode == 401 || primaryStatusCode == 403 || primaryStatusCode == 429 ||
             responseBody.contains("API_KEY", ignoreCase = true) ||
             responseBody.contains("API key not valid", ignoreCase = true) ||
             responseBody.contains("quota", ignoreCase = true)
 
         throw GeminiRestApiException(
             userMessage = if (isAuthOrQuota) {
-                "Gemini API anahtarÄ± geÃ§ersiz veya kota sÄ±nÄ±rÄ±na ulaÅŸÄ±ldÄ± (HTTP $lastStatusCode): $errorMessage"
+                "Gemini API anahtarı geçersiz veya kota sınırına ulaşıldı (HTTP $primaryStatusCode): $errorMessage"
             } else {
-                "Gemini HTTP $lastStatusCode hatasÄ±: $errorMessage"
+                "Gemini HTTP $primaryStatusCode hatası: $errorMessage"
             },
             isAuthOrQuota = isAuthOrQuota
         )
     }
+
+    private suspend fun discoverAvailableFlashModel(apiKey: String): String? = runCatching {
+        val response = ktorHttpClient.get("https://generativelanguage.googleapis.com/v1beta/models") {
+            header("x-goog-api-key", apiKey)
+        }
+        if (!response.status.isSuccess()) return@runCatching null
+
+        val rootObj = json.parseToJsonElement(response.bodyAsText()).jsonObject
+        val modelsArray = rootObj["models"]?.jsonArray ?: return@runCatching null
+
+        val generateContentModels = modelsArray.mapNotNull { element ->
+            val modelObj = element.jsonObject
+            val name = modelObj["name"]?.jsonPrimitive?.content?.removePrefix("models/") ?: return@mapNotNull null
+            val methods = modelObj["supportedGenerationMethods"]?.jsonArray
+                ?.mapNotNull { it.jsonPrimitive.content }
+                .orEmpty()
+            if ("generateContent" in methods &&
+                !name.contains("tts", ignoreCase = true) &&
+                !name.contains("image", ignoreCase = true) &&
+                !name.contains("embedding", ignoreCase = true) &&
+                !name.contains("aqa", ignoreCase = true) &&
+                !name.contains("vision", ignoreCase = true)
+            ) {
+                name
+            } else {
+                null
+            }
+        }
+
+        generateContentModels.firstOrNull { it.contains("flash", ignoreCase = true) }
+            ?: generateContentModels.firstOrNull { it.contains("gemini", ignoreCase = true) }
+    }.getOrNull()
 
     private fun extractTextFromGenerateContentResponse(responseBody: String): String {
         val rootObj = json.parseToJsonElement(responseBody).jsonObject
         val candidates = rootObj["candidates"]?.jsonArray
         if (candidates.isNullOrEmpty()) {
             val snippet = responseBody.replace(Regex("\\s+"), " ").take(100)
-            throw IllegalArgumentException("Model aday yanÄ±t (candidates) Ã¼retmedi. Ham yanÄ±t: $snippet")
+            throw IllegalArgumentException("Model aday yanıt (candidates) üretmedi. Ham yanıt: $snippet")
         }
 
         val firstCandidate = candidates[0].jsonObject
         val parts = firstCandidate["content"]?.jsonObject?.get("parts")?.jsonArray
         if (parts.isNullOrEmpty()) {
             val snippet = responseBody.replace(Regex("\\s+"), " ").take(100)
-            throw IllegalArgumentException("Model iÃ§erik parÃ§asÄ± (parts) Ã¼retmedi. Ham yanÄ±t: $snippet")
+            throw IllegalArgumentException("Model içerik parçası (parts) üretmedi. Ham yanıt: $snippet")
         }
 
         val nonThoughtText = parts
@@ -419,7 +463,7 @@ class AiCoachingRepositoryImpl @Inject constructor(
 
         return (parsedErrorMessage ?: responseBody.replace(Regex("\\s+"), " ").trim())
             .take(180)
-            .ifBlank { "Sunucu hata detayÄ± dÃ¶ndÃ¼rmedi" }
+            .ifBlank { "Sunucu hata detayı döndürmedi" }
     }
 
     /**
@@ -563,5 +607,3 @@ class AiCoachingRepositoryImpl @Inject constructor(
         val isAuthOrQuota: Boolean
     ) : Exception(userMessage)
 }
-
-
